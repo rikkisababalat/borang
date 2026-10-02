@@ -29,7 +29,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen p-4 sm:p-6 lg:p-8">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen p-4 sm:p-6 lg:p-8">
 
     <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
 
@@ -41,14 +41,14 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                     </svg>
-                    Tracker Target Pasien
+                    Tracker Target Pasien (N=300)
                 </h1>
                 <p class="text-slate-500 text-sm mt-1 flex items-center gap-2">
                     <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                    <span>Tersimpan aman di Local Storage browser</span>
+                    <span>Semua sub-target terhubung ke total 300 kasus</span>
                 </p>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap justify-center items-center gap-2">
                 <input type="file" id="importJsonInput" accept=".json" class="hidden">
                 <button id="importBtn" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,7 +68,7 @@
                     </svg>
                     Export CSV
                 </button>
-                <button id="resetBtn" class="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm ml-2">
+                <button id="resetBtn" class="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm ml-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -82,11 +82,11 @@
             <div class="lg:col-span-1 space-y-6">
                 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <h2 class="text-lg font-semibold text-slate-700 border-b pb-3 mb-4">Tambah Pasien</h2>
+                    <h2 class="text-lg font-semibold text-slate-700 border-b pb-3 mb-4">Tambah Data Pasien</h2>
                     <form id="addPatientForm" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-600 mb-1">Umur</label>
-                            <select id="inputUmur" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm">
+                            <select id="inputUmur" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm bg-slate-50">
                                 <option value="" disabled selected>Pilih kategori umur</option>
                                 <option value="bayi">Bayi</option>
                                 <option value="dewasa">Dewasa</option>
@@ -95,7 +95,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-600 mb-1">Jenis Kelamin</label>
-                            <select id="inputKelamin" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm">
+                            <select id="inputKelamin" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm bg-slate-50">
                                 <option value="" disabled selected>Pilih jenis kelamin</option>
                                 <option value="lakilaki">Laki-laki</option>
                                 <option value="perempuan">Perempuan</option>
@@ -103,7 +103,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-600 mb-1">Jenis Kasus</label>
-                            <select id="inputKasus" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm">
+                            <select id="inputKasus" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm bg-slate-50">
                                 <option value="" disabled selected>Pilih jenis kasus</option>
                                 <option value="medik">Kasus Medik</option>
                                 <option value="bedah">Kasus Bedah</option>
@@ -113,41 +113,41 @@
                                 <option value="medikolegal">Medikolegal</option>
                             </select>
                         </div>
-                        <button type="submit" id="submitBtn" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg shadow transition duration-150 text-sm">
-                            + Tambah Pasien
+                        <button type="submit" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg shadow transition duration-150 text-sm">
+                            + Catat Pasien
                         </button>
                     </form>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <h2 class="text-lg font-semibold text-slate-700 mb-2">Progres Target Total</h2>
+                    <h2 class="text-lg font-semibold text-slate-700 mb-2">Progres Keseluruhan</h2>
                     <div class="flex justify-between text-sm text-slate-600 mb-2">
-                        <span>Aktual: <strong id="totalAktual" class="text-indigo-600">0</strong></span>
+                        <span>Tervalidasi: <strong id="totalAktual" class="text-indigo-600">0</strong></span>
                         <span>Target: <strong>300</strong></span>
                     </div>
                     <div class="w-full bg-slate-200 rounded-full h-3 mb-1 overflow-hidden">
                         <div id="progressBar" class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
-                    <p id="progressText" class="text-xs text-right text-slate-500">0% tercapai</p>
+                    <p id="progressText" class="text-xs text-right text-slate-500">0.0% tercapai dari 300</p>
                 </div>
             </div>
 
             <div class="lg:col-span-2 space-y-6">
                 
-                <!-- Tabel Umur -->
+                <!-- Table Kategori Umur -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                         <h3 class="font-semibold text-slate-700">Kategori Umur</h3>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-slate-600">
-                            <thead class="text-xs text-slate-500 bg-slate-50 border-b uppercase">
+                        <table class="w-full text-sm text-left text-slate-600 whitespace-nowrap">
+                            <thead class="text-xs text-slate-500 bg-slate-50/50 border-b uppercase">
                                 <tr>
-                                    <th class="px-6 py-3">Kategori</th>
-                                    <th class="px-6 py-3 text-center">Target %</th>
-                                    <th class="px-6 py-3 text-center">Jml Aktual</th>
-                                    <th class="px-6 py-3 text-center">Aktual %</th>
-                                    <th class="px-6 py-3 text-center">Selisih %</th>
+                                    <th class="px-5 py-3">Kategori</th>
+                                    <th class="px-5 py-3 text-center">Target %</th>
+                                    <th class="px-5 py-3 text-center text-indigo-600">Target (Org)</th>
+                                    <th class="px-5 py-3 text-center">Aktual (Org)</th>
+                                    <th class="px-5 py-3 text-center">Capaian %</th>
                                 </tr>
                             </thead>
                             <tbody id="tableUmur" class="divide-y divide-slate-100"></tbody>
@@ -155,20 +155,20 @@
                     </div>
                 </div>
 
-                <!-- Tabel Jenis Kelamin -->
+                <!-- Table Kategori Kelamin -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200">
                         <h3 class="font-semibold text-slate-700">Kategori Jenis Kelamin</h3>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-slate-600">
-                            <thead class="text-xs text-slate-500 bg-slate-50 border-b uppercase">
+                        <table class="w-full text-sm text-left text-slate-600 whitespace-nowrap">
+                            <thead class="text-xs text-slate-500 bg-slate-50/50 border-b uppercase">
                                 <tr>
-                                    <th class="px-6 py-3">Kategori</th>
-                                    <th class="px-6 py-3 text-center">Target %</th>
-                                    <th class="px-6 py-3 text-center">Jml Aktual</th>
-                                    <th class="px-6 py-3 text-center">Aktual %</th>
-                                    <th class="px-6 py-3 text-center">Selisih %</th>
+                                    <th class="px-5 py-3">Kategori</th>
+                                    <th class="px-5 py-3 text-center">Target %</th>
+                                    <th class="px-5 py-3 text-center text-indigo-600">Target (Org)</th>
+                                    <th class="px-5 py-3 text-center">Aktual (Org)</th>
+                                    <th class="px-5 py-3 text-center">Capaian %</th>
                                 </tr>
                             </thead>
                             <tbody id="tableKelamin" class="divide-y divide-slate-100"></tbody>
@@ -176,20 +176,20 @@
                     </div>
                 </div>
 
-                <!-- Tabel Kasus -->
+                <!-- Table Kategori Kasus -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200">
                         <h3 class="font-semibold text-slate-700">Kategori Kasus</h3>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-slate-600">
-                            <thead class="text-xs text-slate-500 bg-slate-50 border-b uppercase">
+                        <table class="w-full text-sm text-left text-slate-600 whitespace-nowrap">
+                            <thead class="text-xs text-slate-500 bg-slate-50/50 border-b uppercase">
                                 <tr>
-                                    <th class="px-6 py-3">Kategori</th>
-                                    <th class="px-6 py-3 text-center">Target %</th>
-                                    <th class="px-6 py-3 text-center">Jml Aktual</th>
-                                    <th class="px-6 py-3 text-center">Aktual %</th>
-                                    <th class="px-6 py-3 text-center">Selisih %</th>
+                                    <th class="px-5 py-3">Kategori</th>
+                                    <th class="px-5 py-3 text-center">Target %</th>
+                                    <th class="px-5 py-3 text-center text-indigo-600">Target (Org)</th>
+                                    <th class="px-5 py-3 text-center">Aktual (Org)</th>
+                                    <th class="px-5 py-3 text-center">Capaian %</th>
                                 </tr>
                             </thead>
                             <tbody id="tableKasus" class="divide-y divide-slate-100"></tbody>
@@ -202,39 +202,51 @@
     </div>
 
     <script>
-        // Variabel Global & Konstanta
-        const STORAGE_KEY = 'tracker_statistik_pasien_data';
+        const STORAGE_KEY = 'tracker_statistik_pasien_data_v2';
         let patients = [];
+        
+        // Konstanta dasar perhitungan (TIDAK BOLEH BERUBAH)
         const TARGET_TOTAL = 300;
 
-        // Definisi Target (%) sesuai permintaan
-        const targets = {
+        // Definisi Kategori dan Persentase Requirement
+        const targetConfig = {
             umur: {
-                bayi: { label: 'Bayi', target: 20.00 },
-                dewasa: { label: 'Dewasa', target: 62.00 },
-                lansia: { label: 'Lansia', target: 18.00 }
+                bayi: { label: 'Bayi', pct: 20.00 },
+                dewasa: { label: 'Dewasa', pct: 62.00 },
+                lansia: { label: 'Lansia', pct: 18.00 }
             },
             kelamin: {
-                lakilaki: { label: 'Laki-laki', target: 52.67 },
-                perempuan: { label: 'Perempuan', target: 47.33 }
+                lakilaki: { label: 'Laki-laki', pct: 52.67 },
+                perempuan: { label: 'Perempuan', pct: 47.33 }
             },
             kasus: {
-                medik: { label: 'Kasus Medik', target: 30.00 },
-                bedah: { label: 'Kasus Bedah', target: 16.33 },
-                kegawatdaruratan: { label: 'Kasus Kegawatdaruratan', target: 46.00 },
-                kebidanan: { label: 'Kebidanan', target: 7.33 },
-                kejiwaan: { label: 'Kejiwaan', target: 0.33 },
-                medikolegal: { label: 'Medikolegal', target: 0.00 }
+                medik: { label: 'Kasus Medik', pct: 30.00 },
+                bedah: { label: 'Kasus Bedah', pct: 16.33 },
+                kegawatdaruratan: { label: 'Kasus Kegawatdaruratan', pct: 46.00 },
+                kebidanan: { label: 'Kebidanan', pct: 7.33 },
+                kejiwaan: { label: 'Kejiwaan', pct: 0.33 },
+                medikolegal: { label: 'Medikolegal', pct: 0.00 }
             }
         };
 
+        // Fungsi Helper: Custom Toast Notification 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            const bgClass = type === 'success' ? 'bg-emerald-500' : (type === 'error' ? 'bg-red-500' : 'bg-slate-700');
-            const icon = type === 'success' 
-                ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`
-                : `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            
+            let bgClass = 'bg-slate-700';
+            let icon = '';
+            
+            if (type === 'success') {
+                bgClass = 'bg-emerald-500';
+                icon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+            } else if (type === 'error') {
+                bgClass = 'bg-rose-500';
+                icon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else if (type === 'warning') {
+                bgClass = 'bg-amber-500';
+                icon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+            }
 
             toast.className = `toast-enter flex items-center gap-3 ${bgClass} text-white px-4 py-3 rounded-lg shadow-lg max-w-sm`;
             toast.innerHTML = `${icon} <span class="text-sm font-medium">${message}</span>`;
@@ -247,78 +259,96 @@
             }, 3000);
         }
 
+        // Load data on start
         function loadData() {
             try {
-                const savedData = localStorage.getItem(STORAGE_KEY);
-                if (savedData) {
-                    patients = JSON.parse(savedData);
-                } else {
-                    patients = [];
-                }
+                const saved = localStorage.getItem(STORAGE_KEY);
+                patients = saved ? JSON.parse(saved) : [];
             } catch (e) {
-                console.error("Gagal memuat data dari localStorage", e);
                 patients = [];
-                showToast("Gagal memuat data sebelumnya.", "error");
+                showToast("Data korup, memulai sesi baru.", "error");
             }
             updateDashboard();
         }
 
+        // Save data to storage
         function saveData() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
-            } catch (e) {
-                console.error("Gagal menyimpan data ke localStorage", e);
-                showToast("Gagal menyimpan data. Pastikan memori browser cukup.", "error");
-            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
+            updateDashboard();
         }
 
         function updateDashboard() {
-            const total = patients.length;
+            const totalActual = patients.length;
             
-            // Update Progress Total
-            document.getElementById('totalAktual').textContent = total;
-            const progressPercent = Math.min((total / TARGET_TOTAL) * 100, 100);
-            document.getElementById('progressBar').style.width = `${progressPercent}%`;
-            document.getElementById('progressText').textContent = `${progressPercent.toFixed(1)}% tercapai`;
+            // Update Overall Progress
+            document.getElementById('totalAktual').textContent = totalActual;
+            
+            let overallPct = (totalActual / TARGET_TOTAL) * 100;
+            // Cap visual progress at 100% but text can show >100%
+            let visualPct = overallPct > 100 ? 100 : overallPct;
+            
+            document.getElementById('progressBar').style.width = `${visualPct}%`;
+            
+            const progressText = document.getElementById('progressText');
+            progressText.textContent = `${overallPct.toFixed(1)}% tercapai dari total target 300`;
+            if (totalActual >= TARGET_TOTAL) {
+                progressText.classList.add('text-emerald-600', 'font-semibold');
+                document.getElementById('progressBar').classList.replace('bg-indigo-600', 'bg-emerald-500');
+            } else {
+                progressText.classList.remove('text-emerald-600', 'font-semibold');
+                document.getElementById('progressBar').classList.replace('bg-emerald-500', 'bg-indigo-600');
+            }
 
-            function renderTableBody(categoryKey, tableId) {
+            // Function to calculate and render rows
+            function renderCategory(categoryKey, tableId) {
                 const tbody = document.getElementById(tableId);
                 tbody.innerHTML = '';
-                const categoryTargets = targets[categoryKey];
                 
-                for (const key in categoryTargets) {
-                    const item = categoryTargets[key];
-                    const count = patients.filter(p => p[categoryKey] === key).length;
-                    const actualPercent = total === 0 ? 0 : (count / total) * 100;
-                    const diff = actualPercent - item.target;
+                const configs = targetConfig[categoryKey];
+                
+                for (const key in configs) {
+                    const item = configs[key];
                     
-                    let diffColorClass = 'text-slate-600';
-                    let diffSign = '';
-                    if (diff > 0.05) {
-                        diffColorClass = 'text-emerald-600 font-medium';
-                        diffSign = '+';
-                    } else if (diff < -0.05) {
-                        diffColorClass = 'text-red-500 font-medium';
+                    // Logic Inti: Menghitung Absolut Target dari persentase x 300
+                    const targetOrang = Math.round(TARGET_TOTAL * (item.pct / 100));
+                    
+                    // Filter Aktual
+                    const actualCount = patients.filter(p => p[categoryKey] === key).length;
+                    
+                    // Capaian = Aktual / Target Orang 
+                    let achievementPct = 0;
+                    if (targetOrang > 0) {
+                        achievementPct = (actualCount / targetOrang) * 100;
+                    } else if (targetOrang === 0 && actualCount > 0) {
+                        achievementPct = 100; // Exception if target 0 but data exist
                     }
 
+                    // Warning colors if gap is too far behind relative to total progress
+                    let capClass = 'text-slate-600';
+                    if (achievementPct >= 100) capClass = 'text-emerald-600 font-bold';
+                    else if (achievementPct >= 50) capClass = 'text-indigo-600 font-semibold';
+                    else if (actualCount > 0) capClass = 'text-amber-500 font-semibold';
+                    
                     const row = `
-                        <tr class="hover:bg-slate-50 transition-colors fade-in">
-                            <td class="px-6 py-3 font-medium text-slate-800">${item.label}</td>
-                            <td class="px-6 py-3 text-center">${item.target.toFixed(2)}%</td>
-                            <td class="px-6 py-3 text-center font-bold text-indigo-600">${count}</td>
-                            <td class="px-6 py-3 text-center">${actualPercent.toFixed(2)}%</td>
-                            <td class="px-6 py-3 text-center ${diffColorClass}">${diffSign}${diff.toFixed(2)}%</td>
+                        <tr class="hover:bg-slate-100 transition-colors fade-in bg-white">
+                            <td class="px-5 py-3 font-medium text-slate-800">${item.label}</td>
+                            <td class="px-5 py-3 text-center bg-slate-50/50">${item.pct.toFixed(2)}%</td>
+                            <td class="px-5 py-3 text-center font-bold text-indigo-700 bg-indigo-50/30">${targetOrang}</td>
+                            <td class="px-5 py-3 text-center font-medium ${actualCount > 0 ? 'text-slate-800' : 'text-slate-400'}">${actualCount}</td>
+                            <td class="px-5 py-3 text-center ${capClass}">${achievementPct.toFixed(1)}%</td>
                         </tr>
                     `;
                     tbody.insertAdjacentHTML('beforeend', row);
                 }
             }
 
-            renderTableBody('umur', 'tableUmur');
-            renderTableBody('kelamin', 'tableKelamin');
-            renderTableBody('kasus', 'tableKasus');
+            // Render all 3 tables
+            renderCategory('umur', 'tableUmur');
+            renderCategory('kelamin', 'tableKelamin');
+            renderCategory('kasus', 'tableKasus');
         }
 
+        // 1. Submit Form Pasien Baru
         document.getElementById('addPatientForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -326,126 +356,116 @@
             const kelamin = document.getElementById('inputKelamin').value;
             const kasus = document.getElementById('inputKasus').value;
 
-            // Tambah data ke memori
-            patients.push({ 
-                umur, 
-                kelamin, 
-                kasus, 
-                timestamp: new Date().toISOString() 
-            });
+            const id = 'pt_' + Date.now() + Math.floor(Math.random() * 1000);
+            
+            patients.push({ id, umur, kelamin, kasus, timestamp: new Date().toISOString() });
             
             this.reset();
-            saveData(); // Simpan ke Local Storage
-            updateDashboard(); // Perbarui UI
-            
-            showToast('Pasien berhasil ditambahkan!');
+            saveData();
+            showToast('Satu pasien berhasil ditambahkan!');
         });
 
-        // Trigger Import File Dialog
+        // 2. Impor JSON
         document.getElementById('importBtn').addEventListener('click', () => {
             document.getElementById('importJsonInput').click();
         });
 
-        // Handle File Import
         document.getElementById('importJsonInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = function(evt) {
                 try {
-                    const importedData = JSON.parse(event.target.result);
-                    if (Array.isArray(importedData)) {
-                        patients = importedData;
+                    const data = JSON.parse(evt.target.result);
+                    if (Array.isArray(data)) {
+                        patients = data;
                         saveData();
-                        updateDashboard();
-                        showToast('Data berhasil di-import dari JSON!');
+                        showToast(`Berhasil mengimpor ${patients.length} data pasien!`);
                     } else {
-                        throw new Error('Format JSON tidak valid.');
+                        showToast('Format JSON salah. Harus berupa Array.', 'error');
                     }
                 } catch (err) {
-                    showToast('Error saat import data JSON. Format salah.', 'error');
+                    showToast('Gagal memproses file JSON.', 'error');
                 }
             };
             reader.readAsText(file);
-            this.value = ''; // Reset input value
+            this.value = ''; // Reset
         });
 
-        // Export JSON
+        // 3. Ekspor JSON
         document.getElementById('exportJsonBtn').addEventListener('click', () => {
-            if (patients.length === 0) {
-                showToast('Tidak ada data untuk diekspor.', 'error');
-                return;
-            }
-            const dataStr = JSON.stringify(patients, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
+            if (patients.length === 0) return showToast('Belum ada data untuk diekspor.', 'warning');
+            
+            const str = JSON.stringify(patients, null, 2);
+            const blob = new Blob([str], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "tracker_statistik_pasien.json";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Data_Pasien_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
             
-            showToast('Data berhasil diekspor ke JSON!');
+            showToast('Berhasil mengekspor JSON!');
         });
 
-        // Export CSV
+        // 4. Ekspor CSV (Sekarang Mengikuti Hitungan Target 300)
         document.getElementById('exportCsvBtn').addEventListener('click', function() {
-            if (patients.length === 0) {
-                showToast('Tidak ada data untuk diekspor.', 'error');
-                return;
-            }
+            if (patients.length === 0) return showToast('Belum ada data untuk diekspor.', 'warning');
 
-            const total = patients.length;
-            let csvContent = "Kategori,Sub-Kategori,Target %,Jumlah Aktual,Aktual %,Selisih %\n";
+            let csv = "Kategori Utama,Sub-Kategori,Persentase Req (%),Target Absolut (300 Org),Aktual (Org),Capaian (%)\n";
 
             function appendToCSV(categoryName, categoryKey) {
-                const categoryTargets = targets[categoryKey];
-                for (const key in categoryTargets) {
-                    const item = categoryTargets[key];
-                    const count = patients.filter(p => p[categoryKey] === key).length;
-                    const actualPercent = total === 0 ? 0 : (count / total) * 100;
-                    const diff = actualPercent - item.target;
+                const configs = targetConfig[categoryKey];
+                for (const key in configs) {
+                    const item = configs[key];
+                    const targetOrang = Math.round(TARGET_TOTAL * (item.pct / 100));
+                    const actualCount = patients.filter(p => p[categoryKey] === key).length;
                     
-                    csvContent += `"${categoryName}","${item.label}","${item.target.toFixed(2)}","${count}","${actualPercent.toFixed(2)}","${diff.toFixed(2)}"\n`;
+                    let achievementPct = 0;
+                    if (targetOrang > 0) achievementPct = (actualCount / targetOrang) * 100;
+                    else if (targetOrang === 0 && actualCount > 0) achievementPct = 100;
+
+                    csv += `"${categoryName}","${item.label}","${item.pct}","${targetOrang}","${actualCount}","${achievementPct.toFixed(2)}"\n`;
                 }
             }
 
             appendToCSV('Umur', 'umur');
             appendToCSV('Jenis Kelamin', 'kelamin');
             appendToCSV('Kasus', 'kasus');
-            csvContent += `\n"Total Pasien","","300","${total}","${total===0 ? 0 : (total/300*100).toFixed(2)}",""`;
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", "tracker_statistik_pasien.csv");
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
             
-            showToast('Data berhasil diekspor ke CSV!');
+            const total = patients.length;
+            const totalPct = (total / TARGET_TOTAL) * 100;
+            csv += `\n"TOTAL KESELURUHAN","","100","${TARGET_TOTAL}","${total}","${totalPct.toFixed(2)}"\n`;
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Laporan_Target_Pasien_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            showToast('Laporan CSV berhasil diunduh!');
         });
 
-        // Reset Data
+        // 5. Reset Data (Simulasi Custom Confirm Tanpa Fungsi alert/confirm native)
         document.getElementById('resetBtn').addEventListener('click', function() {
-            // Kita membuat custom dialog ringan dengan browser confirm, tapi karena rules melarang 'alert'/'confirm', 
-            // saya akan membuat simulasi sederhana atau eksekusi langsung.
-            // Sesuai rules: "*Never* use alert() and confirm() under any circumstances."
-            // Kita akan buat reset langsung dengan notifikasi (bisa ditambahkan custom modal jika diinginkan).
-            
+            // Karena tidak diperbolehkan memakai confirm(), aksi ini diset langsung mengeksekusi penghapusan
+            // Akan tetapi, notifikasinya sangat jelas menggunakan toast UI
+            if(patients.length === 0) {
+                return showToast('Data sudah kosong.', 'warning');
+            }
             patients = [];
             saveData();
-            updateDashboard();
-            showToast('Semua data pasien telah di-reset (dikosongkan).', 'success');
+            showToast('Peringatan: Seluruh data telah dihapus secara permanen!', 'error');
         });
 
-        // Mulai aplikasi
-        loadData();
+        // Init Setup
+        window.addEventListener('DOMContentLoaded', loadData);
 
     </script>
 </body>
