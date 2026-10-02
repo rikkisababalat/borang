@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker Statistik Pasien</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .toast-enter { animation: toastSlideIn 0.3s ease-out forwards; }
+        .toast-exit { animation: toastSlideOut 0.3s ease-in forwards; }
+        @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes toastSlideOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100%); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col lg:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-indigo-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    Tracker Target Pasien
+                </h1>
+                <p class="text-slate-500 text-sm mt-1 flex items-center gap-2">
+                    <span id="syncIndicator" class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                    <span id="syncText">Mengkoneksikan ke Cloud...</span>
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <input type="file" id="importJsonInput" accept=".json" class="hidden">
+                <button id="importBtn" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Import JSON
+                </button>
+                <button id="exportJsonBtn" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export JSON
+                </button>
+                <button id="exportCsvBtn" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export CSV
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="lg:col-span-1 space-y-6">
+                
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-700 border-b pb-3 mb-4">Tambah Pasien</h2>
+                    <form id="addPatientForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Umur</label>
+                            <select id="inputUmur" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm">
+                                <option value="" disabled selected>Pilih kategori umur</option>
+                                <option value="bayi">Bayi</option>
+                                <option value="dewasa">Dewasa</option>
+                                <option value="lansia">Lansia</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Jenis Kelamin</label>
+                            <select id="inputKelamin" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm">
+                                <option value="" disabled selected>Pilih jenis kelamin</option>
+                                <option value="lakilaki">Laki-laki</option>
+                                <option value="perempuan">Perempuan</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Jenis Kasus</label>
+                            <select id="inputKasus" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm">
+                                <option value="" disabled selected>Pilih jenis kasus</option>
+                                <option value="medik">Kasus Medik</option>
+                                <option value="bedah">Kasus Bedah</option>
+                                <option value="kegawatdaruratan">Kasus Kegawatdaruratan</option>
+                                <option value="kebidanan">Kebidanan</option>
+                                <option value="kejiwaan">Kejiwaan</option>
+                                <option value="medikolegal">Medikolegal</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="submitBtn" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-lg shadow transition duration-150 text-sm">
+                            + Tambah Pasien
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-semibold text-slate-700 mb-2">Progres Target Total</h2>
+                    <div class="flex justify-between text-sm text-slate-600 mb-2">
+                        <span>Aktual: <strong id="totalAktual" class="text-indigo-600">0</strong></span>
+                        <span>Target: <strong>300</strong></span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-3 mb-1 overflow-hidden">
+                        <div id="progressBar" class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p id="progressText" class="text-xs text-right text-slate-500">0% tercapai</p>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Tabel Umur -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                        <h3 class="font-semibold text-slate-700">Kategori Umur</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs text-slate-500 bg-slate-50 border-b uppercase">
+                                <tr>
+                                    <th class="px-6 py-3">Kategori</th>
+                                    <th class="px-6 py-3 text-center">Target %</th>
+                                    <th class="px-6 py-3 text-center">Jml Aktual</th>
+                                    <th class="px-6 py-3 text-center">Aktual %</th>
+                                    <th class="px-6 py-3 text-center">Selisih %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableUmur" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabel Jenis Kelamin -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                        <h3 class="font-semibold text-slate-700">Kategori Jenis Kelamin</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs text-slate-500 bg-slate-50 border-b uppercase">
+                                <tr>
+                                    <th class="px-6 py-3">Kategori</th>
+                                    <th class="px-6 py-3 text-center">Target %</th>
+                                    <th class="px-6 py-3 text-center">Jml Aktual</th>
+                                    <th class="px-6 py-3 text-center">Aktual %</th>
+                                    <th class="px-6 py-3 text-center">Selisih %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableKelamin" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabel Kasus -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                        <h3 class="font-semibold text-slate-700">Kategori Kasus</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600">
+                            <thead class="text-xs text-slate-500 bg-slate-50 border-b uppercase">
+                                <tr>
+                                    <th class="px-6 py-3">Kategori</th>
+                                    <th class="px-6 py-3 text-center">Target %</th>
+                                    <th class="px-6 py-3 text-center">Jml Aktual</th>
+                                    <th class="px-6 py-3 text-center">Aktual %</th>
+                                    <th class="px-6 py-3 text-center">Selisih %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableKasus" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variabel Global
+        let patients = [];
+        const TARGET_TOTAL = 300;
+        let isFirebaseReady = false;
+        let currentUserId = null;
+        let db, auth;
+        let docRef;
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'patient-tracker-default';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+
+        // Definisi Target (%)
+        const targets = {
+            umur: {
+                bayi: { label: 'Bayi', target: 20.00 },
+                dewasa: { label: 'Dewasa', target: 62.00 },
+                lansia: { label: 'Lansia', target: 18.00 }
+            },
+            kelamin: {
+                lakilaki: { label: 'Laki-laki', target: 52.67 },
+                perempuan: { label: 'Perempuan', target: 47.33 }
+            },
+            kasus: {
+                medik: { label: 'Kasus Medik', target: 30.00 },
+                bedah: { label: 'Kasus Bedah', target: 16.33 },
+                kegawatdaruratan: { label: 'Kasus Kegawatdaruratan', target: 46.00 },
+                kebidanan: { label: 'Kebidanan', target: 7.33 },
+                kejiwaan: { label: 'Kejiwaan', target: 0.33 },
+                medikolegal: { label: 'Medikolegal', target: 0.00 }
+            }
+        };
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-500' : 'bg-red-500';
+            const icon = type === 'success' 
+                ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`
+                : `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+
+            toast.className = `toast-enter flex items-center gap-3 ${bgClass} text-white px-4 py-3 rounded-lg shadow-lg max-w-sm`;
+            toast.innerHTML = `${icon} <span class="text-sm font-medium">${message}</span>`;
+            
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.replace('toast-enter', 'toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function setSyncStatus(status) {
+            const indicator = document.getElementById('syncIndicator');
+            const text = document.getElementById('syncText');
+            
+            if (status === 'syncing') {
+                indicator.className = 'h-2.5 w-2.5 rounded-full bg-yellow-500 animate-pulse';
+                text.textContent = 'Menyinkronkan...';
+            } else if (status === 'synced') {
+                indicator.className = 'h-2.5 w-2.5 rounded-full bg-emerald-500';
+                text.textContent = 'Tersinkronisasi dengan Cloud';
+            } else if (status === 'error') {
+                indicator.className = 'h-2.5 w-2.5 rounded-full bg-red-500';
+                text.textContent = 'Gagal sinkronisasi';
+            }
+        }
+
+        function updateDashboard() {
+            const total = patients.length;
+            
+            // Update Progress Total
+            document.getElementById('totalAktual').textContent = total;
+            const progressPercent = Math.min((total / TARGET_TOTAL) * 100, 100);
+            document.getElementById('progressBar').style.width = `${progressPercent}%`;
+            document.getElementById('progressText').textContent = `${progressPercent.toFixed(1)}% tercapai`;
+
+            function renderTableBody(categoryKey, tableId) {
+                const tbody = document.getElementById(tableId);
+                tbody.innerHTML = '';
+                const categoryTargets = targets[categoryKey];
+                
+                for (const key in categoryTargets) {
+                    const item = categoryTargets[key];
+                    const count = patients.filter(p => p[categoryKey] === key).length;
+                    const actualPercent = total === 0 ? 0 : (count / total) * 100;
+                    const diff = actualPercent - item.target;
+                    
+                    let diffColorClass = 'text-slate-600';
+                    let diffSign = '';
+                    if (diff > 0.05) {
+                        diffColorClass = 'text-emerald-600 font-medium';
+                        diffSign = '+';
+                    } else if (diff < -0.05) {
+                        diffColorClass = 'text-red-500 font-medium';
+                    }
+
+                    const row = `
+                        <tr class="hover:bg-slate-50 transition-colors fade-in">
+                            <td class="px-6 py-3 font-medium text-slate-800">${item.label}</td>
+                            <td class="px-6 py-3 text-center">${item.target.toFixed(2)}%</td>
+                            <td class="px-6 py-3 text-center font-bold text-indigo-600">${count}</td>
+                            <td class="px-6 py-3 text-center">${actualPercent.toFixed(2)}%</td>
+                            <td class="px-6 py-3 text-center ${diffColorClass}">${diffSign}${diff.toFixed(2)}%</td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                }
+            }
+
+            renderTableBody('umur', 'tableUmur');
+            renderTableBody('kelamin', 'tableKelamin');
+            renderTableBody('kasus', 'tableKasus');
+        }
+
+        async function initFirebase() {
+            if (!firebaseConfig) {
+                setSyncStatus('error');
+                updateDashboard();
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Authentication
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                if (!auth.currentUser) throw new Error("Gagal Autentikasi");
+                
+                currentUserId = auth.currentUser.uid;
+                
+                // Gunakan 1 document untuk menyimpan state data tracking (sesuai aturan path yg diminta)
+                docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'patient_tracker_data', 'main_data');
+                
+                // Listen Real-time changes
+                onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.patients && Array.isArray(data.patients)) {
+                            patients = data.patients;
+                        }
+                    } else {
+                        // Document belum ada
+                        patients = [];
+                    }
+                    updateDashboard();
+                    setSyncStatus('synced');
+                    isFirebaseReady = true;
+                    document.getElementById('submitBtn').disabled = false;
+                }, (error) => {
+                    console.error("Firebase Listener Error: ", error);
+                    setSyncStatus('error');
+                    showToast('Gagal memuat data Cloud.', 'error');
+                });
+
+            } catch (err) {
+                console.error("Firebase Init Error:", err);
+                setSyncStatus('error');
+            }
+        }
+
+        // Fungsi Simpan ke Firebase
+        async function saveToCloud() {
+            if (!isFirebaseReady || !currentUserId) return;
+            setSyncStatus('syncing');
+            try {
+                await setDoc(docRef, { 
+                    patients: patients,
+                    updatedAt: new Date().toISOString()
+                });
+                // Note: Real-time listener (onSnapshot) otomatis mendeteksi perubahan
+                // dan mengembalikan status UI menjadi 'synced'
+            } catch (e) {
+                console.error("Error saving: ", e);
+                setSyncStatus('error');
+                showToast('Gagal menyimpan ke Cloud', 'error');
+            }
+        }
+
+        document.getElementById('addPatientForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const umur = document.getElementById('inputUmur').value;
+            const kelamin = document.getElementById('inputKelamin').value;
+            const kasus = document.getElementById('inputKasus').value;
+
+            // Tambah data ke lokal secara optimis
+            patients.push({ umur, kelamin, kasus, timestamp: new Date().toISOString() });
+            
+            this.reset();
+            updateDashboard();
+            
+            // Sinkronisasi
+            await saveToCloud();
+            showToast('Pasien berhasil ditambahkan!');
+        });
+
+        // Trigger Import File Dialog
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.getElementById('importJsonInput').click();
+        });
+
+        // Handle File Import
+        document.getElementById('importJsonInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    if (Array.isArray(importedData)) {
+                        patients = importedData;
+                        updateDashboard();
+                        await saveToCloud();
+                        showToast('Data berhasil di-import dari JSON!');
+                    } else {
+                        throw new Error('Format JSON tidak valid.');
+                    }
+                } catch (err) {
+                    showToast('Error saat import data JSON.', 'error');
+                }
+            };
+            reader.readAsText(file);
+            this.value = ''; // Reset input value
+        });
+
+        // Export JSON
+        document.getElementById('exportJsonBtn').addEventListener('click', () => {
+            if (patients.length === 0) {
+                showToast('Tidak ada data untuk diekspor.', 'error');
+                return;
+            }
+            const dataStr = JSON.stringify(patients, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "tracker_statistik_pasien.json";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Data berhasil diekspor ke JSON!');
+        });
+
+        // Export CSV
+        document.getElementById('exportCsvBtn').addEventListener('click', function() {
+            if (patients.length === 0) {
+                showToast('Tidak ada data untuk diekspor.', 'error');
+                return;
+            }
+
+            const total = patients.length;
+            let csvContent = "Kategori,Sub-Kategori,Target %,Jumlah Aktual,Aktual %,Selisih %\n";
+
+            function appendToCSV(categoryName, categoryKey) {
+                const categoryTargets = targets[categoryKey];
+                for (const key in categoryTargets) {
+                    const item = categoryTargets[key];
+                    const count = patients.filter(p => p[categoryKey] === key).length;
+                    const actualPercent = total === 0 ? 0 : (count / total) * 100;
+                    const diff = actualPercent - item.target;
+                    
+                    csvContent += `"${categoryName}","${item.label}","${item.target.toFixed(2)}","${count}","${actualPercent.toFixed(2)}","${diff.toFixed(2)}"\n`;
+                }
+            }
+
+            appendToCSV('Umur', 'umur');
+            appendToCSV('Jenis Kelamin', 'kelamin');
+            appendToCSV('Kasus', 'kasus');
+            csvContent += `\n"Total Pasien","","300","${total}","${total===0 ? 0 : (total/300*100).toFixed(2)}",""`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "tracker_statistik_pasien.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Data berhasil diekspor ke CSV!');
+        });
+
+        // Start App
+        document.getElementById('submitBtn').disabled = true; // disable sebelum siap
+        updateDashboard(); // Render awal (kosong)
+        initFirebase(); // Mulai koneksi Firebase
+
+    </script>
+</body>
+</html>
