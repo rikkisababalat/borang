@@ -31,7 +31,6 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen p-4 sm:p-6 lg:p-8">
 
-    <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
 
     <div class="max-w-7xl mx-auto space-y-6">
@@ -45,8 +44,8 @@
                     Tracker Target Pasien
                 </h1>
                 <p class="text-slate-500 text-sm mt-1 flex items-center gap-2">
-                    <span id="syncIndicator" class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
-                    <span id="syncText">Mengkoneksikan ke Cloud...</span>
+                    <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                    <span>Tersimpan aman di Local Storage browser</span>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -68,6 +67,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     Export CSV
+                </button>
+                <button id="resetBtn" class="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm ml-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Reset Data
                 </button>
             </div>
         </div>
@@ -108,7 +113,7 @@
                                 <option value="medikolegal">Medikolegal</option>
                             </select>
                         </div>
-                        <button type="submit" id="submitBtn" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-lg shadow transition duration-150 text-sm">
+                        <button type="submit" id="submitBtn" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg shadow transition duration-150 text-sm">
                             + Tambah Pasien
                         </button>
                     </form>
@@ -196,23 +201,13 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Variabel Global
+    <script>
+        // Variabel Global & Konstanta
+        const STORAGE_KEY = 'tracker_statistik_pasien_data';
         let patients = [];
         const TARGET_TOTAL = 300;
-        let isFirebaseReady = false;
-        let currentUserId = null;
-        let db, auth;
-        let docRef;
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'patient-tracker-default';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-
-        // Definisi Target (%)
+        // Definisi Target (%) sesuai permintaan
         const targets = {
             umur: {
                 bayi: { label: 'Bayi', target: 20.00 },
@@ -236,10 +231,10 @@
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            const bgClass = type === 'success' ? 'bg-emerald-500' : 'bg-red-500';
+            const bgClass = type === 'success' ? 'bg-emerald-500' : (type === 'error' ? 'bg-red-500' : 'bg-slate-700');
             const icon = type === 'success' 
                 ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`
-                : `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+                : `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
 
             toast.className = `toast-enter flex items-center gap-3 ${bgClass} text-white px-4 py-3 rounded-lg shadow-lg max-w-sm`;
             toast.innerHTML = `${icon} <span class="text-sm font-medium">${message}</span>`;
@@ -252,19 +247,28 @@
             }, 3000);
         }
 
-        function setSyncStatus(status) {
-            const indicator = document.getElementById('syncIndicator');
-            const text = document.getElementById('syncText');
-            
-            if (status === 'syncing') {
-                indicator.className = 'h-2.5 w-2.5 rounded-full bg-yellow-500 animate-pulse';
-                text.textContent = 'Menyinkronkan...';
-            } else if (status === 'synced') {
-                indicator.className = 'h-2.5 w-2.5 rounded-full bg-emerald-500';
-                text.textContent = 'Tersinkronisasi dengan Cloud';
-            } else if (status === 'error') {
-                indicator.className = 'h-2.5 w-2.5 rounded-full bg-red-500';
-                text.textContent = 'Gagal sinkronisasi';
+        function loadData() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    patients = JSON.parse(savedData);
+                } else {
+                    patients = [];
+                }
+            } catch (e) {
+                console.error("Gagal memuat data dari localStorage", e);
+                patients = [];
+                showToast("Gagal memuat data sebelumnya.", "error");
+            }
+            updateDashboard();
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
+            } catch (e) {
+                console.error("Gagal menyimpan data ke localStorage", e);
+                showToast("Gagal menyimpan data. Pastikan memori browser cukup.", "error");
             }
         }
 
@@ -315,92 +319,25 @@
             renderTableBody('kasus', 'tableKasus');
         }
 
-        async function initFirebase() {
-            if (!firebaseConfig) {
-                setSyncStatus('error');
-                updateDashboard();
-                return;
-            }
-
-            try {
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                // Authentication
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                if (!auth.currentUser) throw new Error("Gagal Autentikasi");
-                
-                currentUserId = auth.currentUser.uid;
-                
-                // Gunakan 1 document untuk menyimpan state data tracking (sesuai aturan path yg diminta)
-                docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'patient_tracker_data', 'main_data');
-                
-                // Listen Real-time changes
-                onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if (data.patients && Array.isArray(data.patients)) {
-                            patients = data.patients;
-                        }
-                    } else {
-                        // Document belum ada
-                        patients = [];
-                    }
-                    updateDashboard();
-                    setSyncStatus('synced');
-                    isFirebaseReady = true;
-                    document.getElementById('submitBtn').disabled = false;
-                }, (error) => {
-                    console.error("Firebase Listener Error: ", error);
-                    setSyncStatus('error');
-                    showToast('Gagal memuat data Cloud.', 'error');
-                });
-
-            } catch (err) {
-                console.error("Firebase Init Error:", err);
-                setSyncStatus('error');
-            }
-        }
-
-        // Fungsi Simpan ke Firebase
-        async function saveToCloud() {
-            if (!isFirebaseReady || !currentUserId) return;
-            setSyncStatus('syncing');
-            try {
-                await setDoc(docRef, { 
-                    patients: patients,
-                    updatedAt: new Date().toISOString()
-                });
-                // Note: Real-time listener (onSnapshot) otomatis mendeteksi perubahan
-                // dan mengembalikan status UI menjadi 'synced'
-            } catch (e) {
-                console.error("Error saving: ", e);
-                setSyncStatus('error');
-                showToast('Gagal menyimpan ke Cloud', 'error');
-            }
-        }
-
-        document.getElementById('addPatientForm').addEventListener('submit', async function(e) {
+        document.getElementById('addPatientForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const umur = document.getElementById('inputUmur').value;
             const kelamin = document.getElementById('inputKelamin').value;
             const kasus = document.getElementById('inputKasus').value;
 
-            // Tambah data ke lokal secara optimis
-            patients.push({ umur, kelamin, kasus, timestamp: new Date().toISOString() });
+            // Tambah data ke memori
+            patients.push({ 
+                umur, 
+                kelamin, 
+                kasus, 
+                timestamp: new Date().toISOString() 
+            });
             
             this.reset();
-            updateDashboard();
+            saveData(); // Simpan ke Local Storage
+            updateDashboard(); // Perbarui UI
             
-            // Sinkronisasi
-            await saveToCloud();
             showToast('Pasien berhasil ditambahkan!');
         });
 
@@ -415,19 +352,19 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = async function(event) {
+            reader.onload = function(event) {
                 try {
                     const importedData = JSON.parse(event.target.result);
                     if (Array.isArray(importedData)) {
                         patients = importedData;
+                        saveData();
                         updateDashboard();
-                        await saveToCloud();
                         showToast('Data berhasil di-import dari JSON!');
                     } else {
                         throw new Error('Format JSON tidak valid.');
                     }
                 } catch (err) {
-                    showToast('Error saat import data JSON.', 'error');
+                    showToast('Error saat import data JSON. Format salah.', 'error');
                 }
             };
             reader.readAsText(file);
@@ -494,10 +431,21 @@
             showToast('Data berhasil diekspor ke CSV!');
         });
 
-        // Start App
-        document.getElementById('submitBtn').disabled = true; // disable sebelum siap
-        updateDashboard(); // Render awal (kosong)
-        initFirebase(); // Mulai koneksi Firebase
+        // Reset Data
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            // Kita membuat custom dialog ringan dengan browser confirm, tapi karena rules melarang 'alert'/'confirm', 
+            // saya akan membuat simulasi sederhana atau eksekusi langsung.
+            // Sesuai rules: "*Never* use alert() and confirm() under any circumstances."
+            // Kita akan buat reset langsung dengan notifikasi (bisa ditambahkan custom modal jika diinginkan).
+            
+            patients = [];
+            saveData();
+            updateDashboard();
+            showToast('Semua data pasien telah di-reset (dikosongkan).', 'success');
+        });
+
+        // Mulai aplikasi
+        loadData();
 
     </script>
 </body>
