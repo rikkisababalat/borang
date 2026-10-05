@@ -1,472 +1,1056 @@
-<!DOCTYPE html>
+<!DOCTYPE1 html>
 <html lang="id">
 <head>
+    <!-- Chosen Palette: Clinical Slate & Warm Neutral Harmony (Warm Neutral Background #f8fafc, Deep Slate #1e293b, Medical Blue #2563eb, Emerald #059669, Amber #d97706, Rose #dc2626) -->
+    <!-- Application Structure Plan: Dynamic Single Page Clinical Application structured into 5 core interactive modules: 1) Trajektori Waktu Demam (Day-by-day clinical evolution & warning signs), 2) Patofisiologi & Kinetika Biomarker (Interactive line charts comparing PCT vs CRP dynamics and hypothalamic set-point mechanism), 3) Matriks Diagnostik & Jendela Uji (Sensitivity curves for NS1, Serology, Culture, PCR, Widal vs TUBEX comparison), 4) Evaluasi Pediatri (Rochester Low-Risk Criteria interactive checker and Febrile Seizure classification), and 5) Kalkulator Dosis & Wizard Klinis (Weight-based Paracetamol dosing and interactive diagnostic filter). This structure prioritizes immediate clinical decision support, allowing doctors and students to navigate logically by symptom duration, patient age, or lab test interpretation rather than reading linear prose. -->
+    <!-- Visualization & Content Choices:
+    1. PCT vs CRP Kinetic Comparison -> Line Chart (Chart.js Canvas) -> Visualizes rapid 6-12h PCT rise vs delayed 24-48h CRP rise, illustrating PCT's superiority in early bacterial discrimination and antibiotic stewardship -> Chart.js line graph.
+    2. Diagnostic Test Windows (Days 1-14) -> Line Chart (Chart.js Canvas) -> Shows sensitivity curves of NS1, IgM, IgG, PCR, MAT, and Blood Culture over time to prevent false negative misinterpretations -> Chart.js line graph.
+    3. Widal vs TUBEX / Typhidot Comparison -> Interactive Side-by-Side Cards & Table -> Highlights low PPV (9-30%) of Widal and rationale for modern rapid diagnostic tests -> HTML/CSS interactive tabs.
+    4. Rochester Pediatric Risk Calculator -> Interactive JS Form -> Input patient parameters to dynamically evaluate low-risk vs high-risk SBI status -> JS logic with live feedback banner.
+    5. Paracetamol Dosage & NSAID Safety Calculator -> Interactive JS Tool -> Input weight/age to compute safe mg/dose, interval, and display absolute contraindications (NSAIDs/Aspirin) -> JS logic.
+    CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracker Statistik Pasien</title>
+    <title>Panduan Diagnostik Demam Berdasarkan Durasi & Patofisiologi</title>
+    
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f8fafc; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        .toast-enter { animation: toastSlideIn 0.3s ease-out forwards; }
-        .toast-exit { animation: toastSlideOut 0.3s ease-in forwards; }
-        @keyframes toastSlideIn {
-            from { opacity: 0; transform: translateX(100%); }
-            to { opacity: 1; transform: translateX(0); }
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 680px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
         }
-        @keyframes toastSlideOut {
-            from { opacity: 1; transform: translateX(0); }
-            to { opacity: 0; transform: translateX(100%); }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 360px;
+            }
+        }
+        .tab-active {
+            border-bottom: 3px solid #2563eb;
+            color: #2563eb;
+            font-weight: 700;
+        }
+        .step-active {
+            background-color: #2563eb;
+            color: #ffffff;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen p-4 sm:p-6 lg:p-8">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
 
-    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
-
-    <div class="max-w-7xl mx-auto space-y-6">
+    <!-- Header Navigation -->
+    <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🌡️</span>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold tracking-tight text-white">Sistem Keputusan Klinis Demam Akut</h1>
+                    <p class="text-xs text-slate-400">Analisis Trajektori Waktu, Biomarker, & Algoritma Pediatri (Harrison's, Nelson, WHO, IDSA)</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 text-xs">
+                <span class="bg-blue-900/80 text-blue-200 border border-blue-700 px-2.5 py-1 rounded-full font-medium">AUFI Decision Support</span>
+                <span class="bg-emerald-900/80 text-emerald-200 border border-emerald-700 px-2.5 py-1 rounded-full font-medium">Bukti Berbasis Modul</span>
+            </div>
+        </div>
         
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col lg:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-indigo-700 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-                    </svg>
-                    Tracker Target Pasien (N=300)
-                </h1>
-                <p class="text-slate-500 text-sm mt-1 flex items-center gap-2">
-                    <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                    <span>Semua sub-target terhubung ke total 300 kasus</span>
+        <!-- Navigation Bar -->
+        <div class="bg-slate-800 border-t border-slate-700">
+            <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 overflow-x-auto">
+                <nav class="flex space-x-1 sm:space-x-4 text-xs sm:text-sm font-medium py-1 whitespace-nowrap" id="main-nav">
+                    <button onclick="switchTab('trajektori')" id="nav-trajektori" class="px-3 py-2 rounded-md text-slate-200 hover:text-white hover:bg-slate-700 transition font-semibold bg-slate-700">1. Trajektori Waktu Demam</button>
+                    <button onclick="switchTab('patofisiologi')" id="nav-patofisiologi" class="px-3 py-2 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 transition font-semibold">2. Patofisiologi & PCT/CRP</button>
+                    <button onclick="switchTab('diagnostik')" id="nav-diagnostik" class="px-3 py-2 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 transition font-semibold">3. Jendela Tes & Widal vs TUBEX</button>
+                    <button onclick="switchTab('pediatri')" id="nav-pediatri" class="px-3 py-2 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 transition font-semibold">4. Pediatri (FWS & Kejang Demam)</button>
+                    <button onclick="switchTab('kalkulator')" id="nav-kalkulator" class="px-3 py-2 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 transition font-semibold">5. Kalkulator Dosis & Filter</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- Intro Context Banner -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-5 mb-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h2 class="text-base md:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <span>📋</span> Integrasi Klinis: Acute Undifferentiated Febrile Illness (AUFI)
+                    </h2>
+                    <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+                        Aplikasi interaktif ini mengorganisasi laporan klinis komprehensif menjadi alat bantu keputusan praktis. Pendekatan berbasis durasi (hari ke-1 s/d >14 hari) dipadukan dengan kinetika biomarker, jendela sensitivitas laboratorium, serta stratifikasi risiko pediatrik untuk mencegah kesalahan diagnosis dan penggunaan antibiotik yang tidak rasional.
+                    </p>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 min-w-[260px]">
+                    <span class="font-bold block text-amber-900 mb-0.5">⚠️ Pengingat Keamanan Obat:</span>
+                    Haram hukumnya memberikan OAINS (Ibuprofen, Diklofenak, Aspirin) pada demam akut tanpa etiologi pasti akibat risiko disfungsi keping darah dan perdarahan masif!
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: TRAJEKTORI WAKTU DEMAM -->
+        <!-- ========================================== -->
+        <section id="sec-trajektori" class="space-y-6">
+            <!-- Section Intro -->
+            <div class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded-r-lg">
+                <h3 class="text-base font-bold text-blue-900">Modul 1: Evaluasi Trajektori Waktu Demam</h3>
+                <p class="text-xs sm:text-sm text-blue-800 mt-1">
+                    Modul ini memetakan spektrum diagnosis diferensial berdasarkan perjalanan waktu demam. Pilih durasi demam di bawah untuk mengeksplorasi patofisiologi spesifik, patogen dominan, tanda bahaya, dan jebakan klinis pada setiap fase.
                 </p>
             </div>
-            <div class="flex flex-wrap justify-center items-center gap-2">
-                <input type="file" id="importJsonInput" accept=".json" class="hidden">
-                <button id="importBtn" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    Import JSON
+
+            <!-- Trajectory Time Selector Buttons -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button onclick="selectDuration('d12')" id="btn-d12" class="p-3 text-left rounded-xl border-2 border-blue-600 bg-blue-50/80 shadow-sm transition hover:shadow">
+                    <div class="text-xs font-bold uppercase text-blue-600 tracking-wider">Fase 1</div>
+                    <div class="text-sm font-bold text-slate-900 mt-0.5">Hari 1 – 2</div>
+                    <div class="text-xs text-slate-500 mt-1">Sangat Akut (Arbovirus, Parasitemia Awal)</div>
                 </button>
-                <button id="exportJsonBtn" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Export JSON
+                <button onclick="selectDuration('d35')" id="btn-d35" class="p-3 text-left rounded-xl border-2 border-slate-200 bg-white shadow-sm transition hover:shadow">
+                    <div class="text-xs font-bold uppercase text-amber-600 tracking-wider">Fase 2 (KRITIS)</div>
+                    <div class="text-sm font-bold text-slate-900 mt-0.5">Hari 3 – 5</div>
+                    <div class="text-xs text-slate-500 mt-1">Kebocoran Plasma Dengue & Warning Signs</div>
                 </button>
-                <button id="exportCsvBtn" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export CSV
+                <button onclick="selectDuration('d614')" id="btn-d614" class="p-3 text-left rounded-xl border-2 border-slate-200 bg-white shadow-sm transition hover:shadow">
+                    <div class="text-xs font-bold uppercase text-emerald-600 tracking-wider">Fase 3</div>
+                    <div class="text-sm font-bold text-slate-900 mt-0.5">Hari 6 – 14</div>
+                    <div class="text-xs text-slate-500 mt-1">Tifoid, Scrub Typhus, Fase Imun Leptospira</div>
                 </button>
-                <button id="resetBtn" class="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 text-sm ml-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Reset Data
+                <button onclick="selectDuration('d14plus')" id="btn-d14plus" class="p-3 text-left rounded-xl border-2 border-slate-200 bg-white shadow-sm transition hover:shadow">
+                    <div class="text-xs font-bold uppercase text-purple-600 tracking-wider">Fase 4</div>
+                    <div class="text-sm font-bold text-slate-900 mt-0.5">> 14 Hari (FUO)</div>
+                    <div class="text-xs text-slate-500 mt-1">Fever of Unknown Origin (Autoimun/Keganasan)</div>
                 </button>
             </div>
-        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <div class="lg:col-span-1 space-y-6">
+            <!-- Content Panel: Hari 1 - 2 -->
+            <div id="panel-d12" class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-5">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-md">Hari 1 - 2</span>
+                        <h4 class="text-base font-bold text-slate-900">Fase Sangat Akut: Presentasi Non-Spesifik & Arbovirus</h4>
+                    </div>
+                    <span class="text-xs text-slate-500 hidden sm:inline">Uji Optimal: Deteksi Antigen Direct / PCR / Mikroskopis</span>
+                </div>
+
+                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    Pada 24-48 jam pertama, gambaran klinis sering kali berupa *Acute Undifferentiated Febrile Illness* (AUFI) tanpa tanda pelokalisasi organ spesifik. Pengujian serologi antibodi (IgM/IgG) pada fase ini sangat tidak dianjurkan karena sistem imun adaptif belum menghasilkan antibodi di atas ambang deteksi (*limit of detection*).
+                </p>
+
+                <!-- Comparison: Dengue vs Chikungunya -->
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <h5 class="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                        <span>⚔️</span> Pembedaan Klinis Utama: Dengue vs Chikungunya (Hari 1-2)
+                    </h5>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
+                        <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-blue-700 text-sm">Virus Dengue (DENV)</span>
+                                <span class="bg-blue-50 text-blue-700 text-[10px] px-2 py-0.5 rounded font-semibold">Flavivirus</span>
+                            </div>
+                            <ul class="space-y-1.5 text-slate-600 list-disc list-inside">
+                                "Nyerinya otot / mialgia mendalam ("break-bone fever").</li>
+                                "Nyeri retro-orbital persisten (nyeri di belakang bola mata saat digerakkan).</li>
+                                "Mual & muntah sering menonjol sejak hari pertama.</li>
+                                "NS1 Ag positif tinggi (>90% pada infeksi primer).</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-teal-700 text-sm">Virus Chikungunya (CHIKV)</span>
+                                <span class="bg-teal-50 text-teal-700 text-[10px] px-2 py-0.5 rounded font-semibold">Alphavirus</span>
+                            </div>
+                            <ul class="space-y-1.5 text-slate-600 list-disc list-inside">
+                                "Poliatralgia simetris bilateral yang sangat menyiksa pada sendi-sendi kecil/besar.</li>
+                                "Pasien sering mengalami imobilitas total akibat nyeri sendi ekstrem.</li>
+                                "Risiko kebocoran plasma intravaskular tidak sesignifikan pada Dengue.</li>
+                                "Ditransmisikan oleh vektor nyamuk yang sama (*Aedes aegypti / albopictus*).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Pathogens in Day 1-2 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
+                    <div class="border border-slate-200 p-3.5 rounded-lg space-y-1.5">
+                        <span class="font-bold text-amber-800 block">🦟 Malaria Akut (*Plasmodium spp.*)</span>
+                        <p class="text-slate-600">Trias demam mendadak, menggigil hebat (*rigors*), dan keringat profus. Wajib diperiksa pada riwayat perjalanan ke daerah endemik (Papua, NTT, Afrika). Pengujian: Apusan darah tepi tebal/tipis & RDT. Ulangi tiap 8-24 jam jika klinis curiga meski hasil pertama negatif.</p>
+                    </div>
+                    <div class="border border-slate-200 p-3.5 rounded-lg space-y-1.5">
+                        <span class="font-bold text-indigo-800 block">🐀 Leptospirosis Fase Leptospiremia</span>
+                        <p class="text-slate-600">Inokulasi spiroseta lewat kontak urin tikus/banjir. Bakteri beredar bebas di aliran darah. Pengujian optimal: PCR darah. Jangan gunakan MAT (Microscopic Agglutination Test) pada hari 1-2 karena pasti negatif palsu.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Panel: Hari 3 - 5 -->
+            <div id="panel-d35" class="hidden bg-white rounded-xl border border-amber-200 shadow-sm p-5 space-y-5">
+                <div class="flex items-center justify-between border-b border-amber-100 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2.5 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-md">Hari 3 - 5</span>
+                        <h4 class="text-base font-bold text-slate-900">Fase Kritis Dengue & Perubahan Transisi Gejala</h4>
+                    </div>
+                    <span class="text-xs text-amber-800 font-bold hidden sm:inline">⚠️ Waspadai Kebocoran Plasma & Defervescence</span>
+                </div>
+
+                <div class="bg-amber-50 rounded-xl p-4 border border-amber-200 space-y-3">
+                    <h5 class="text-sm font-bold text-amber-900 flex items-center gap-2">
+                        <span>🚨</span> Paradoks Defervescence Pada Dengue
+                    </h5>
+                    <p class="text-xs sm:text-sm text-amber-900 leading-relaxed">
+                        Saat suhu tubuh pasien berangsur turun mendekati normal (37.5°C - 38°C) pada hari ke-3 hingga 5, orang awam sering menganggap pasien sembuh. Namun secara patofisiologis, ini adalah **FASE KRITIS**! Peningkatan permeabilitas kapiler menyebabkan ekstravasasi plasma ke ruang interstisial.
+                    </p>
+                </div>
+
+                <!-- Warning Signs vs Shock Spectrum -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
+                    <div class="border border-red-200 bg-red-50/50 p-4 rounded-xl space-y-2">
+                        <span class="font-bold text-red-900 text-sm block"> Tanda Bahaya (*Warning Signs* - WHO 2009)</span>
+                        <p class="text-slate-700 text-xs mb-2">Indikasi rawat inap segera dan protokol resusitasi cairan IV:</p>
+                        <ul class="space-y-1 text-slate-800 list-disc list-inside font-medium">
+                            <li>Nyeri perut hebat atau nyeri tekan kuadran kanan atas</li>
+                            <li>Muntah persisten (≥3 kali dalam 24 jam)</li>
+                            <li>Akumulasi cairan klinis (efusi pleura, asites)</li>
+                            <li>Perdarahan mukosa spontan (epistaksis, perdarahan gusi, melena)</li>
+                            <li>Letargi, gelisah, atau penurunan kesadaran</li>
+                            <li>Hepatomegali > 2 cm di bawah arkus kosta</li>
+                            <li>Peningkatan Hematokrit bersamaan dengan penurunan cepat Trombosit</li>
+                        </ul>
+                    </div>
+
+                    <div class="border border-slate-200 p-4 rounded-xl space-y-3 bg-white">
+                        <span class="font-bold text-slate-900 text-sm block"> Laboratorium Khas Fase Kritis Dengue</span>
+                        <div class="space-y-2">
+                            <div class="p-2.5 bg-slate-50 rounded border border-slate-200">
+                                <span class="font-bold text-blue-700 block">Hemokonsentrasi (Peningkatan Ht)</span>
+                                <span class="text-slate-600 text-xs">Peningkatan Hematokrit >20% dari nilai *baseline* pasien menandakan kehilangan volume plasma intravaskular masif.</span>
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded border border-slate-200">
+                                <span class="font-bold text-rose-700 block">Trombositopenia Agresif</span>
+                                <span class="text-slate-600 text-xs">Penurunan keping darah hingga <100.000/mm³ akibat destruksi imunologis yang dimediasi komplemen dan supresi sumsum tulang.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leptospirosis Saddleback -->
+                <div class="border border-slate-200 p-3.5 rounded-lg text-xs sm:text-sm bg-slate-50">
+                    <span class="font-bold text-slate-900 block mb-1">Pola Demam Bifasik / Saddleback (Leptospirosis & Chikungunya)</span>
+                    <p class="text-slate-600">Pada Leptospirosis, akhir hari ke-4 atau 5 menandakan akhir fase leptospiremia (bakteri dibersihkan dari darah) dan transisi menuju fase imun. Suhu sempat turun beberapa jam/hari sebelum melonjak kembali disertai keterlibatan organ ginjal/hati.</p>
+                </div>
+            </div>
+
+            <!-- Content Panel: Hari 6 - 14 -->
+            <div id="panel-d614" class="hidden bg-white rounded-xl border border-emerald-200 shadow-sm p-5 space-y-5">
+                <div class="flex items-center justify-between border-b border-emerald-100 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-md">Hari 6 - 14</span>
+                        <h4 class="text-base font-bold text-slate-900">Komplikasi Sistemik, Infeksi Spesifik, & Serologi Matang</h4>
+                    </div>
+                    <span class="text-xs text-slate-500 hidden sm:inline">Reorientasi ke Tifoid, Scrub Typhus, & Penyakit Weil</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm">
+                    <!-- Typhoid -->
+                    <div class="border border-slate-200 p-4 rounded-xl space-y-2 bg-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-amber-800 text-sm">Demam Tifoid</span>
+                            <span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-bold">Minggu ke-2</span>
+                        </div>
+                        <p class="text-slate-600">Invasion *S. typhi* pada Plak Peyer usus. Demam pola *step-ladder* (naik bertahap tiap hari), bradikardia relatif (disosiasi suhu-nadi), lidah kotor (*typhoid tongue*), dan gangguan BAB.</p>
+                        <div class="p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 text-[11px] font-medium">
+                            🔥 <strong>Bahaya Komplikasi (Hari 10 - Minggu 3):</strong> Nekrosis Plak Peyer dapat memicu Perforasi Ileum dan Perdarahan Saluran Cerna Atas/Bawah masif.
+                        </div>
+                    </div>
+
+                    <!-- Scrub Typhus -->
+                    <div class="border border-slate-200 p-4 rounded-xl space-y-2 bg-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-emerald-800 text-sm">Scrub Typhus</span>
+                            <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">Riketsia</span>
+                        </div>
+                        <p class="text-slate-600">Disebabkan *Orientia tsutsugamushi* via gigitan tungau (*chigger*). Demam tinggi persisten, limfadenopati generalisata, dan tanda patognomonik **Eschar**.</p>
+                        <div class="p-2 bg-emerald-50 border border-emerald-200 rounded text-emerald-900 text-[11px] font-medium">
+                            🔍 <strong>Ciri Eschar:</strong> Tukak nekrotik kehitaman tidak nyeri di daerah lipatan kulit (aksila, selangkangan, lipatan perut). Respon dramatis terhadap Doksisiklin.
+                        </div>
+                    </div>
+
+                    <!-- Weil's Disease -->
+                    <div class="border border-slate-200 p-4 rounded-xl space-y-2 bg-white">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-indigo-800 text-sm">Leptospirosis Lanjut</span>
+                            <span class="bg-indigo-100 text-indigo-800 text-[10px] px-2 py-0.5 rounded font-bold">Penyakit Weil</span>
+                        </div>
+                        <p class="text-slate-600">Transisi ke Fase Imun. Deposit kompleks imun di mikrosirkulasi ginjal dan hepar. Menimbulkan trias penyakit Weil: Ikterus berat, gagal ginjal akut, dan diathesis perdarahan.</p>
+                        <div class="p-2 bg-indigo-50 border border-indigo-200 rounded text-indigo-900 text-[11px] font-medium">
+                            🧪 <strong>Pengujian MAT:</strong> Konfirmasi gold standard memerlukan pengujian MAT serum berpasangan (kenaikan titer 4x lipat). PCR darah kini negatif, gunakan PCR urin.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Panel: > 14 Hari (FUO) -->
+            <div id="panel-d14plus" class="hidden bg-white rounded-xl border border-purple-200 shadow-sm p-5 space-y-5">
+                <div class="flex items-center justify-between border-b border-purple-100 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-md">> 14 Hari</span>
+                        <h4 class="text-base font-bold text-slate-900">Fever of Unknown Origin (FUO) Kriteria Klasik</h4>
+                    </div>
+                    <span class="text-xs text-purple-800 font-bold hidden sm:inline">Definisi Harrison's: Suhu >38.3°C berulang, >3 minggu</span>
+                </div>
+
+                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    Jika demam bertahan melampaui 2-3 minggu tanpa kaji etiologi yang jelas meskipun telah dilakukan investigasi rawat jalan 3 kali atau rawat inap 3 hari, kasus ini diklasifikasikan sebagai **FUO**. Pendekatan bergeser dari penyakit infeksi tropis akut menuju **Triad Etiologi FUO**.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm">
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                        <span class="font-bold text-purple-900 block text-sm">1. Kelainan Autoimun / Inflamasi</span>
+                        <ul class="space-y-1 text-slate-700 list-disc list-inside">
+                            <li>Lupus Eritematosus Sistemik (SLE)</li>
+                            <li>Adult-Onset Still's Disease (AOSD) - Demam spike sore hari, artralgia, hiperferritinemia</li>
+                            <li>Giant Cell Arteritis / Takayasu (lansia)</li>
+                            <li>Polyarteritis Nodosa (PAN)</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                        <span class="font-bold text-rose-900 block text-sm">2. Keganasan (Malignansi)</span>
+                        <ul class="space-y-1 text-slate-700 list-disc list-inside">
+                            <li>Limfoma Hodgkin (Pola demam Pel-Ebstein: demam 1-2 minggu berseling afebril)</li>
+                            <li>Leukemia Akut/Kronis</li>
+                            <li>Renal Cell Carcinoma (Karsinoma Sel Ginjal)</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                        <span class="font-bold text-amber-900 block text-sm">3. Infeksi Granulomatosa / Tersembunyi</span>
+                        <ul class="space-y-1 text-slate-700 list-disc list-inside">
+                            <li>Tuberkulosis Milier / TB Ekstraparu</li>
+                            <li>Endokarditis Infektif Subakut (SBE)</li>
+                            <li>Abses Intraabdominal / Abses Hati Ameba</li>
+                            <li>Osteomielitis kronis & Abses Gigi</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: PATOFISIOLOGI & KINETIKA BIOMARKER -->
+        <!-- ========================================== -->
+        <section id="sec-patofisiologi" class="hidden space-y-6">
+            <!-- Section Intro -->
+            <div class="bg-indigo-50 border-l-4 border-indigo-600 p-4 rounded-r-lg">
+                <h3 class="text-base font-bold text-indigo-900">Modul 2: Patofisiologi Pirogenik & Kinetika PCT vs CRP</h3>
+                <p class="text-xs sm:text-sm text-indigo-800 mt-1">
+                    Modul ini menguraikan mekanistis molekuler terjadinya demam di hipotalamus serta perbandingan kinetika molekuler antara Procalcitonin (PCT) dan C-Reactive Protein (CRP) untuk membedakan infeksi bakteri dan virus secara presisi.
+                </p>
+            </div>
+
+            <!-- Pathophysiology Molecular Cascade Steps -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span>⚙️</span> Kaskade Molekuler Termoregulasi Hipotalamus
+                </h4>
                 
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <h2 class="text-lg font-semibold text-slate-700 border-b pb-3 mb-4">Tambah Data Pasien</h2>
-                    <form id="addPatientForm" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-600 mb-1">Umur</label>
-                            <select id="inputUmur" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm bg-slate-50">
-                                <option value="" disabled selected>Pilih kategori umur</option>
-                                <option value="bayi">Bayi</option>
-                                <option value="dewasa">Dewasa</option>
-                                <option value="lansia">Lansia</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-600 mb-1">Jenis Kelamin</label>
-                            <select id="inputKelamin" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm bg-slate-50">
-                                <option value="" disabled selected>Pilih jenis kelamin</option>
-                                <option value="lakilaki">Laki-laki</option>
-                                <option value="perempuan">Perempuan</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-600 mb-1">Jenis Kasus</label>
-                            <select id="inputKasus" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm bg-slate-50">
-                                <option value="" disabled selected>Pilih jenis kasus</option>
-                                <option value="medik">Kasus Medik</option>
-                                <option value="bedah">Kasus Bedah</option>
-                                <option value="kegawatdaruratan">Kasus Kegawatdaruratan</option>
-                                <option value="kebidanan">Kebidanan</option>
-                                <option value="kejiwaan">Kejiwaan</option>
-                                <option value="medikolegal">Medikolegal</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg shadow transition duration-150 text-sm">
-                            + Catat Pasien
-                        </button>
-                    </form>
-                </div>
-
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <h2 class="text-lg font-semibold text-slate-700 mb-2">Progres Keseluruhan</h2>
-                    <div class="flex justify-between text-sm text-slate-600 mb-2">
-                        <span>Tervalidasi: <strong id="totalAktual" class="text-indigo-600">0</strong></span>
-                        <span>Target: <strong>300</strong></span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 text-center text-xs">
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col items-center justify-center">
+                        <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-1">1</span>
+                        <span class="font-bold text-slate-800">Pirogen Eksogen</span>
+                        <span class="text-[11px] text-slate-500 mt-0.5">LPS Bakteri, RNA/DNA Virus, Parasit</span>
                     </div>
-                    <div class="w-full bg-slate-200 rounded-full h-3 mb-1 overflow-hidden">
-                        <div id="progressBar" class="bg-indigo-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col items-center justify-center">
+                        <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-1">2</span>
+                        <span class="font-bold text-slate-800">Sitokin Endogen</span>
+                        <span class="text-[11px] text-slate-500 mt-0.5">Aktivasi PRR → Pelepas IL-1, IL-6, TNF-α</span>
                     </div>
-                    <p id="progressText" class="text-xs text-right text-slate-500">0.0% tercapai dari 300</p>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col items-center justify-center">
+                        <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-1">3</span>
+                        <span class="font-bold text-slate-800">OVLT & COX-2</span>
+                        <span class="text-[11px] text-slate-500 mt-0.5">Sinyal di Sawar Darah Otak → Induksi PGE2</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col items-center justify-center">
+                        <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-1">4</span>
+                        <span class="font-bold text-slate-800">Set-Point Naik</span>
+                        <span class="text-[11px] text-slate-500 mt-0.5">Hipotalamus mereset termostat ke suhu tinggi</span>
+                    </div>
+                    <div class="p-3 bg-amber-50 rounded-lg border border-amber-200 flex flex-col items-center justify-center">
+                        <span class="w-6 h-6 rounded-full bg-amber-600 text-white font-bold flex items-center justify-center mb-1">5</span>
+                        <span class="font-bold text-amber-900">Konservasi Panas</span>
+                        <span class="text-[11px] text-amber-800 mt-0.5">Vasokonstriksi kulit + Menggigil (*rigors*)</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="lg:col-span-2 space-y-6">
-                
-                <!-- Table Kategori Umur -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                        <h3 class="font-semibold text-slate-700">Kategori Umur</h3>
+            <!-- Interactive Biomarker Kinetics Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Left: Interactive Chart -->
+                <div class="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                        <h4 class="text-sm font-bold text-slate-900">Kinetika Respons Molekuler: Procalcitonin vs CRP</h4>
+                        <div class="flex space-x-1 text-[11px]">
+                            <button onclick="updatePctChart('bacterial')" id="btn-chart-bac" class="px-2.5 py-1 rounded bg-blue-600 text-white font-medium">Sepsis Bakteri</button>
+                            <button onclick="updatePctChart('viral')" id="btn-chart-vir" class="px-2.5 py-1 rounded bg-slate-200 text-slate-700 font-medium hover:bg-slate-300">Infeksi Virus</button>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-slate-600 whitespace-nowrap">
-                            <thead class="text-xs text-slate-500 bg-slate-50/50 border-b uppercase">
-                                <tr>
-                                    <th class="px-5 py-3">Kategori</th>
-                                    <th class="px-5 py-3 text-center">Target %</th>
-                                    <th class="px-5 py-3 text-center text-indigo-600">Target (Org)</th>
-                                    <th class="px-5 py-3 text-center">Aktual (Org)</th>
-                                    <th class="px-5 py-3 text-center">Capaian %</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableUmur" class="divide-y divide-slate-100"></tbody>
-                        </table>
+
+                    <!-- Responsive Chart Container -->
+                    <div class="chart-container">
+                        <canvas id="pctCrpChart"></canvas>
                     </div>
+
+                    <p class="text-[11px] text-slate-500 italic text-center">
+                        *Grafik menggambarkan rasio perubahan konsentrasi plasma selama 72 jam pasca invasi patogen.
+                    </p>
                 </div>
 
-                <!-- Table Kategori Kelamin -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200">
-                        <h3 class="font-semibold text-slate-700">Kategori Jenis Kelamin</h3>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-slate-600 whitespace-nowrap">
-                            <thead class="text-xs text-slate-500 bg-slate-50/50 border-b uppercase">
-                                <tr>
-                                    <th class="px-5 py-3">Kategori</th>
-                                    <th class="px-5 py-3 text-center">Target %</th>
-                                    <th class="px-5 py-3 text-center text-indigo-600">Target (Org)</th>
-                                    <th class="px-5 py-3 text-center">Aktual (Org)</th>
-                                    <th class="px-5 py-3 text-center">Capaian %</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableKelamin" class="divide-y divide-slate-100"></tbody>
-                        </table>
+                <!-- Right: Explanatory & Cut-off Matrix -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3 text-xs sm:text-sm">
+                        <h4 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">Mengapa Procalcitonin (PCT) Superior?</h4>
+                        
+                        <div class="space-y-2 text-slate-600">
+                            <p>
+                                ⚡ <strong>Kecepatan Respons:</strong> PCT melonjak tajam dalam <strong>6–12 jam</strong> pasca stimulasi endotoksin/bakteri, mencapai puncak 12–36 jam. CRP membutuhkan <strong>24–48 jam</strong> karena bergantung pada sintesis hepatik sekunder.
+                            </p>
+                            <p>
+                                🛑 <strong>Penghambatan Virus:</strong> Infeksi virus merangsang pelepasan <em>Interferon-gamma (IFN-γ)</em> yang secara aktif **MENGHAMBAT** sintesis PCT. Sehingga PCT tetap rendah pada infeksi virus murni!
+                            </p>
+                        </div>
+
+                        <!-- Cut-off Table -->
+                        <div class="mt-3 overflow-hidden rounded-lg border border-slate-200">
+                            <table class="w-full text-left text-[11px]">
+                                <thead class="bg-slate-100 font-bold text-slate-700">
+                                    <tr>
+                                        <th class="p-2 border-b">Titer PCT Serum</th>
+                                        <th class="p-2 border-b">Interpretasi Klinis</th>
+                                        <th class="p-2 border-b">Tindakan Antibiotik</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    <tr class="bg-emerald-50/50">
+                                        <td class="p-2 font-bold text-emerald-800">&lt; 0.1 - 0.25 ng/mL</td>
+                                        <td class="p-2 text-slate-600">Infeksi Virus / Non-Bakteri</td>
+                                        <td class="p-2 font-bold text-emerald-700">Tahan / Hentikan</td>
+                                    </tr>
+                                    <tr class="bg-amber-50/50">
+                                        <td class="p-2 font-bold text-amber-800">0.25 - 0.5 ng/mL</td>
+                                        <td class="p-2 text-slate-600">Kemungkinan Infeksi Bakteri Lokal</td>
+                                        <td class="p-2 font-bold text-amber-700">Pertimbangkan Klinis</td>
+                                    </tr>
+                                    <tr class="bg-rose-50/50">
+                                        <td class="p-2 font-bold text-rose-800">&gt; 0.5 - 2.0+ ng/mL</td>
+                                        <td class="p-2 text-slate-600">Bakteremia Sistematik / Sepsis</td>
+                                        <td class="p-2 font-bold text-rose-700">Berikan Segera</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Table Kategori Kasus -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200">
-                        <h3 class="font-semibold text-slate-700">Kategori Kasus</h3>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-slate-600 whitespace-nowrap">
-                            <thead class="text-xs text-slate-500 bg-slate-50/50 border-b uppercase">
-                                <tr>
-                                    <th class="px-5 py-3">Kategori</th>
-                                    <th class="px-5 py-3 text-center">Target %</th>
-                                    <th class="px-5 py-3 text-center text-indigo-600">Target (Org)</th>
-                                    <th class="px-5 py-3 text-center">Aktual (Org)</th>
-                                    <th class="px-5 py-3 text-center">Capaian %</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableKasus" class="divide-y divide-slate-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-
             </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: JENDELA TES & WIDAL VS TUBEX -->
+        <!-- ========================================== -->
+        <section id="sec-diagnostik" class="hidden space-y-6">
+            <!-- Section Intro -->
+            <div class="bg-teal-50 border-l-4 border-teal-600 p-4 rounded-r-lg">
+                <h3 class="text-base font-bold text-teal-900">Modul 3: Jendela Sensitivitas Diagnostik & Analisis Uji Tifoid</h3>
+                <p class="text-xs sm:text-sm text-teal-800 mt-1">
+                    Pemilihan modalitas pengujian harus disesuaikan secara ketat dengan trajektori hari demam untuk menghindari hasil negatif palsu (*false negative*). Modul ini menampilkan kurva sensitivitas serta membedakan uji Widal tradisional dari modalitas modern.
+                </p>
+            </div>
+
+            <!-- Sensitivity Curve Chart -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900">Sensitivitas Modalitas Pengujian Berdasarkan Hari Demam (Hari 1-14)</h4>
+                        <p class="text-xs text-slate-500">Perhatikan transisi sensitivitas dari deteksi direct pathogen (NS1/Kultur/PCR) ke Serologi Antibodi (IgM/IgG/MAT).</p>
+                    </div>
+                </div>
+
+                <!-- Responsive Chart Container -->
+                <div class="chart-container">
+                    <canvas id="sensitivityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Deep-Dive Table: Widal Controversy vs Modern TUBEX/Typhidot -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <div class="border-b border-slate-100 pb-2">
+                    <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span>🔬</span> Kontroversi Uji Widal vs Modalitas Diagnostik Tifoid Modern
+                    </h4>
+                    <p class="text-xs text-slate-600 mt-1">
+                        Uji Widal masih sering over-utilized di fasilitas kesehatan primer daerah berkembang meskipun memiliki tingkat presisi rendah yang memicu pengobatan antibiotik berlebihan (*overdiagnosis*).
+                    </p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200 text-slate-700">
+                                <th class="p-3 font-bold">Parameter Uji</th>
+                                <th class="p-3 font-bold text-rose-700">Uji Widal (Antigen O & H)</th>
+                                <th class="p-3 font-bold text-blue-700">TUBEX® TF / Typhidot (IgM)</th>
+                                <th class="p-3 font-bold text-emerald-700">Kultur Darah (*Gold Standard*)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            <tr>
+                                <td class="p-3 font-semibold bg-slate-50">Target Molekuler</td>
+                                <td class="p-3">Aglutinin Antibodi terhadap Ag Somatik O & Flagelar H</td>
+                                <td class="p-3">Antibodi IgM spesifik terhadap Ag O9 *S. typhi*</td>
+                                <td class="p-3">Isolasi biakan hidup *Salmonella enterica serotype Typhi*</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold bg-slate-50">Sensitivitas & Spesifisitas</td>
+                                <td class="p-3 text-rose-700 font-medium">Bervariasi luas (47-82%); Sangat terpengaruh antibodi latar belakang populasi.</td>
+                                <td class="p-3 text-blue-700 font-medium">Sensitivitas 70-95%, Spesifisitas 85-96% tinggi.</td>
+                                <td class="p-3 text-emerald-700 font-medium">Spesifisitas ~100%; Sensitivitas 40-80% (tertinggi di minggu ke-1).</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold bg-slate-50">Nilai Prediktif Positif (PPV)</td>
+                                <td class="p-3 text-rose-700 font-bold">SANGAT RENDAH (9% - 30%) pada sampel tunggal!</td>
+                                <td class="p-3 font-semibold text-blue-800">Tinggi pada fase demam akut.</td>
+                                <td class="p-3 font-semibold text-emerald-800">100% Definitive Diagnosis.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold bg-slate-50">Keterbatasan Utama</td>
+                                <td class="p-3">Reaktivitas silang dengan spesies *Enterobacteriaceae* lain, tifoid masa lalu, atau imunisasi. Titer tunggal tidak valid tanpa sampel berpasangan.</td>
+                                <td class="p-3">Biaya reagen sedikit lebih mahal dari Widal, namun mengeliminasi reaktivitas silang IgG lama.</td>
+                                <td class="p-3">Proses biakan lambat (2-5 hari), sensitivitas anjlok jika pasien telah terpapar antibiotik empiris.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-amber-50 p-3.5 rounded-lg border border-amber-200 text-xs text-amber-900">
+                    💡 <strong>Rekomendasi Praktis:</strong> Penggunaan tes Widal sampel tunggal harus mulai ditinggalkan dalam praktek jalan sehari-hari. Gunakan tes TUBEX-TF atau Typhidot yang mendeteksi IgM spesifik untuk keputusan klinis cepat di fasilitas dengan keterbatasan sarana biakan.
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: PEDIATRI (FWS & KEJANG DEMAM) -->
+        <!-- ========================================== -->
+        <section id="sec-pediatri" class="hidden space-y-6">
+            <!-- Section Intro -->
+            <div class="bg-rose-50 border-l-4 border-rose-600 p-4 rounded-r-lg">
+                <h3 class="text-base font-bold text-rose-900">Modul 4: Evaluasi Pediatri (FWS & Kejang Demam)</h3>
+                <p class="text-xs sm:text-sm text-rose-800 mt-1">
+                    Evaluasi demam pada anak sangat dipengaruhi oleh maturitas imunologis dan usia kronologis. Modul ini menyajikan algoritma *Fever Without Source* (FWS) serta klasifikasi dan patofisiologi kejang demam.
+                </p>
+            </div>
+
+            <!-- FWS Management by Age Group -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Neonates vs Infants -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
+                    <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <span>👶</span> Stratifikasi Risiko FWS Berdasarkan Usia
+                    </h4>
+
+                    <div class="space-y-3 text-xs sm:text-sm">
+                        <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg space-y-1">
+                            <span class="font-bold text-rose-900 block">Neonatus (&lt; 28 Hari / Usia &lt; 1 Bulan)</span>
+                            <p class="text-slate-700 text-xs">
+                                **RISIKO TINGGI SEPSIS!** Sistem imun belum matang, sawar darah-otak permeable. Suspek patogen: *GBS, E. coli, Listeria monocytogenes*.
+                            </p>
+                            <span class="inline-block mt-1 font-bold text-rose-800 text-[11px] bg-rose-100 px-2 py-0.5 rounded">
+                                Mandat: RAWAT INAP TOTAL + Workup Sepsis Lengkap (Darah, Urin, Pungsi Lumbal LP) + Antibiotik IV Spektrum Luas.
+                            </span>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                            <span class="font-bold text-slate-900 block">Infan 1 – 3 Bulan & Pra-Sekolah</span>
+                            <p class="text-slate-700 text-xs">
+                                Evaluasi kemungkinan *Serious Bacterial Infection* (SBI) dan Bakteremia Tersembunyi (*Occult Bacteremia*). Gunakan kriteria stratifikasi risiko rendah seperti **Kriteria Rochester**.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Rochester Criteria Checker -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
+                    <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <span>📋</span> Evaluator Kriteria Risiko Rendah Rochester (1-3 Bulan)
+                    </h4>
+                    <p class="text-xs text-slate-500">Centang semua kriteria yang terpenuhi pada bayi FWS:</p>
+
+                    <div class="space-y-2 text-xs">
+                        <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 rounded">
+                            <input type="checkbox" id="roch-1" onchange="evaluateRochester()" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-slate-700">Tampak sehat, aktif, non-toxic appearing</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 rounded">
+                            <input type="checkbox" id="roch-2" onchange="evaluateRochester()" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-slate-700">Riwayat sehat sejak lahir (tanpa komorbid/prematuritas)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 rounded">
+                            <input type="checkbox" id="roch-3" onchange="evaluateRochester()" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-slate-700">Leukosit Darah: 5.000 – 15.000 /mm³</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 rounded">
+                            <input type="checkbox" id="roch-4" onchange="evaluateRochester()" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-slate-700">Neutrofil batang (band) absolut ≤ 1.500 /mm³</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 rounded">
+                            <input type="checkbox" id="roch-5" onchange="evaluateRochester()" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-slate-700">Sedimen Urin: &lt; 10 Leukosit/HPF & Bebas Nitrit</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 rounded">
+                            <input type="checkbox" id="roch-6" onchange="evaluateRochester()" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-slate-700">Feses (jika diare): &lt; 5 Leukosit/HPF</span>
+                        </label>
+                    </div>
+
+                    <!-- Live Result Banner -->
+                    <div id="rochester-result" class="p-3 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold mt-2">
+                        Pilih kriteria di atas untuk melihat status stratifikasi risiko.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Febrile Seizure Deep-Dive -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <div class="border-b border-slate-100 pb-2">
+                    <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span>⚡</span> Kejang Demam (*Febrile Seizures*): Patofisiologi & Klasifikasi
+                    </h4>
+                    <p class="text-xs text-slate-600 mt-1">
+                        Terjadi pada 2–5% anak usia 6 bulan hingga 5 tahun (puncak 12–18 bulan). Kejang dipicu oleh **KECEPATAN KENAIKAN SUHU** pada 1–24 jam pertama demam, bukan semata-mata puncak derajat suhu statis.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
+                    <!-- Simple Febrile Seizure -->
+                    <div class="border border-emerald-200 bg-emerald-50/40 p-4 rounded-xl space-y-2">
+                        <span class="font-bold text-emerald-900 text-sm block">1. Kejang Demam Sederhana (Simple - 80%)</span>
+                        <ul class="space-y-1.5 text-slate-700 list-disc list-inside">
+                            <li>Bentuk serangan: Umum (*generalized* tonik-klonik).</li>
+                            <li>Durasi singkat: <strong>&lt; 15 menit</strong>.</li>
+                            <li>Frekuensi: Maksimal 1 kali dalam kurun waktu 24 jam.</li>
+                            <li>Pemulihan pasca-kejang (*post-ictal*) cepat penuh tanpa defisit neurologis.</li>
+                            <li><strong>Prinsip Terapi:</strong> Tidak memerlukan medikasi anti-epilepsi rumatan maupun antipiretik profilaksis pemutus kejang.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Complex Febrile Seizure -->
+                    <div class="border border-rose-200 bg-rose-50/40 p-4 rounded-xl space-y-2">
+                        <span class="font-bold text-rose-900 text-sm block">2. Kejang Demam Kompleks (Complex)</span>
+                        <ul class="space-y-1.5 text-slate-700 list-disc list-inside">
+                            <li>Bentuk serangan: Fokal / Parsial (pada satu sisi anggota tubuh).</li>
+                            <li>Durasi memanjang: <strong>&gt; 15 menit</strong> konsekutif.</li>
+                            <li>Frekuensi: Berulang (&gt;1 kali) dalam kurun waktu 24 jam yang sama.</li>
+                            <li>Risiko rekurensi tinggi jika serangan sulung terjadi pada usia &lt;12 bulan.</li>
+                            <li><strong>Tindakan Gawat Darurat:</strong> Diazepam rektal/intranasal jika kejang berlangsung &gt;5 menit.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 5: KALKULATOR DOSIS & WIZARD KLINIS -->
+        <!-- ========================================== -->
+        <section id="sec-kalkulator" class="hidden space-y-6">
+            <!-- Section Intro -->
+            <div class="bg-amber-50 border-l-4 border-amber-600 p-4 rounded-r-lg">
+                <h3 class="text-base font-bold text-amber-900">Modul 5: Kalkulator Dosis Parasetamol & Filter Diagnosis Klinis</h3>
+                <p class="text-xs sm:text-sm text-amber-800 mt-1">
+                    Gunakan kalkulator berbasis berat badan empiris di bawah ini untuk menghitung dosis aman Parasetamol, serta cari penyakit spesifik berdasarkan kata kunci atau durasi demam.
+                </p>
+            </div>
+
+            <!-- Paracetamol Dosage & Safety Calculator -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <div class="border-b border-slate-100 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span>💊</span> Kalkulator Dosis Parasetamol & Protokol Antipiretik Aman
+                    </h4>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-md">10 - 15 mg/kgBB / Kali</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm">
+                    <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <label class="block font-bold text-slate-800">Berat Badan Pasien (kg):</label>
+                        <input type="number" id="calc-weight" value="12" min="2" max="100" oninput="calculateParacetamol()" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-900 text-base">
+
+                        <label class="block font-bold text-slate-800">Sediaan Sirup:</label>
+                        <select id="calc-syrup" onchange="calculateParacetamol()" class="w-full p-2.5 border border-slate-300 rounded-lg bg-white text-xs font-semibold">
+                            <option value="120">Sirup Standar (120 mg / 5 mL)</option>
+                            <option value="250">Sirup Forte (250 mg / 5 mL)</option>
+                            <option value="80">Drops Bayi (80 mg / 0.8 mL)</option>
+                        </select>
+                    </div>
+
+                    <!-- Live Results Card -->
+                    <div class="md:col-span-2 bg-blue-50/60 p-4 rounded-xl border border-blue-200 space-y-3">
+                        <span class="font-bold text-blue-900 text-sm block">Hasil Perhitungan Dosis Presisi:</span>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                            <div class="bg-white p-3 rounded-lg border border-blue-100">
+                                <span class="text-xs text-slate-500 block">Dosis per Kali Berikan</span>
+                                <span id="res-dose-mg" class="text-lg font-black text-blue-700">120 - 180 mg</span>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-blue-100">
+                                <span class="text-xs text-slate-500 block">Volume Sediaan Sirup</span>
+                                <span id="res-dose-ml" class="text-lg font-black text-emerald-700">5.0 - 7.5 mL</span>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-blue-100">
+                                <span class="text-xs text-slate-500 block">Batas Maksimal 24 Jam</span>
+                                <span id="res-max-mg" class="text-lg font-black text-rose-700">Max 900 mg</span>
+                            </div>
+                        </div>
+
+                        <div class="text-[11px] text-slate-600 space-y-1">
+                            <p>⏱️ <strong>Interval Pemberian:</strong> Tiap 4 hingga 6 jam bilamana diperlukan (maksimal 4 kali sehari).</p>
+                            <p>🚫 <strong>Restriksi Absolut:</strong> Dilarang keras menggunakan Aspirin pada anak akibat risiko <strong>Reye Syndrome</strong> (ensefalopati akut & degenerasi lemak hepar).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filterable Diagnosis Wizard -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <div class="border-b border-slate-100 pb-2">
+                    <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span>🔍</span> Filter Diagnostik Klinis Berdasarkan Kata Kunci & Gejala
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Ketik kata kunci gejala (misal: "retro-orbital", "eschar", "bradikardia", "kebocoran plasma", "nyeri sendi") untuk memfilter etiologi relevan.</p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input type="text" id="search-input" onkeyup="filterDiagnoses()" placeholder="Cari gejala atau patogen..." class="flex-grow p-2.5 border border-slate-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500">
+                    <select id="filter-dur-select" onchange="filterDiagnoses()" class="p-2.5 border border-slate-300 rounded-lg text-xs sm:text-sm bg-white font-medium">
+                        <option value="all">Semua Durasi</option>
+                        <option value="d12">Hari 1-2</option>
+                        <option value="d35">Hari 3-5</option>
+                        <option value="d614">Hari 6-14</option>
+                        <option value="d14plus">> 14 Hari</option>
+                    </select>
+                </div>
+
+                <!-- Cards Grid -->
+                <div id="diag-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                    <!-- Dynamic Search Cards Generated via JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-6 mt-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p class="font-medium text-slate-300">Aplikasi Keputusan Klinis Demam Akut & Trajektori Waktu</p>
+            <p>Berdasarkan Harrison's Principles of Internal Medicine, Nelson Textbook of Pediatrics, IDSA, & WHO Guidelines.</p>
+            <p class="text-[10px] text-slate-500">*Untuk keperluan pendidikan medis & bantuan keputusan akademis klinis.</p>
         </div>
-    </div>
+    </footer>
 
+    <!-- JavaScript Logic -->
     <script>
-        const STORAGE_KEY = 'tracker_statistik_pasien_data_v2';
-        let patients = [];
-        
-        // Konstanta dasar perhitungan (TIDAK BOLEH BERUBAH)
-        const TARGET_TOTAL = 300;
+        // Global Application State & References
+        let pctChartInstance = null;
+        let sensitivityChartInstance = null;
 
-        // Definisi Kategori dan Persentase Requirement
-        const targetConfig = {
-            umur: {
-                bayi: { label: 'Bayi', pct: 20.00 },
-                dewasa: { label: 'Dewasa', pct: 62.00 },
-                lansia: { label: 'Lansia', pct: 18.00 }
-            },
-            kelamin: {
-                lakilaki: { label: 'Laki-laki', pct: 52.67 },
-                perempuan: { label: 'Perempuan', pct: 47.33 }
-            },
-            kasus: {
-                medik: { label: 'Kasus Medik', pct: 30.00 },
-                bedah: { label: 'Kasus Bedah', pct: 16.33 },
-                kegawatdaruratan: { label: 'Kasus Kegawatdaruratan', pct: 46.00 },
-                kebidanan: { label: 'Kebidanan', pct: 7.33 },
-                kejiwaan: { label: 'Kejiwaan', pct: 0.33 },
-                medikolegal: { label: 'Medikolegal', pct: 0.00 }
-            }
-        };
+        const diagnosesData = [
+            { id: 1, name: "Virus Dengue (DENV)", duration: "d12", durLabel: "Hari 1-2 & Hari 3-5", symptoms: "retro-orbital mialgia break-bone fever mual muntah ns1 warning signs trombositopenia hemokonsentrasi defervescence", summary: "Onset mendadak suhu tinggi, nyeri retro-orbital, mialgia. Masuk fase kritis kebocoran plasma pada hari ke-3 s/d 5 saat suhu turun." },
+            { id: 2, name: "Virus Chikungunya (CHIKV)", duration: "d12", durLabel: "Hari 1-2 & Hari 3-5", symptoms: "poliatralgia nyeri sendi bilateral simetris imobilitas ruam saddleback bifasik", summary: "Ditandai nyeri sendi (polyarthralgia) bilateral simetris yang sangat menyiksa. Risiko kebocoran plasma tidak seberat Dengue." },
+            { id: 3, name: "Malaria Akut (Plasmodium spp.)", duration: "d12", durLabel: "Hari 1-2+", symptoms: "trias menggigil rigors keringat profus parasitemia apusan darah tepi rdt", summary: "Trias demam, menggigil hebat, dan keringat parah. Evaluasi apusan darah tebal/tipis berulang jika curiga di daerah endemik." },
+            { id: 4, name: "Demam Tifoid (Salmonella typhi)", duration: "d614", durLabel: "Hari 6-14 (Minggu 2)", symptoms: "step-ladder bradikardia relatif plak peyer perforasi ileum tubex widal kultur darah", summary: "Bakteremia sekunder pasca invasi Plak Peyer usus. Demam step-ladder, bradikardia relatif. Risiko perforasi usus minggu ke-2/3." },
+            { id: 5, name: "Scrub Typhus (O. tsutsugamushi)", duration: "d614", durLabel: "Hari 6-14", symptoms: "eschar tungau chigger tukak hitam limfadenopati doksisiklin", summary: "Ditularkan gigitan larva tungau. Tanda patognomonik ESCHAR (tukak nekrotik kehitaman tidak nyeri). Respons cepat terhadap doksisiklin." },
+            { id: 6, name: "Leptospirosis & Penyakit Weil", duration: "d614", durLabel: "Hari 1-2 (Darah) / Hari 6-14 (Imun/Urin)", symptoms: "ikterus penyakit weil gagal ginjal pcr darah mat urin spiroseta tikus banjir", summary: "Fase leptospiremia (hari 1-5, PCR darah) bertransisi ke Fase Imun (minggu 2, MAT & PCR Urin). Penyakit Weil menyajikan ikterus dan gagal ginjal." },
+            { id: 7, name: "Fever of Unknown Origin (FUO)", duration: "d14plus", durLabel: "> 14 Hari / > 3 Minggu", symptoms: "fuo sle aosd Still hodgkin pel-ebstein tb milier endokarditis abses", summary: "Suhu >38.3°C berulang >3 minggu. Triad: Autoimun (SLE/AOSD), Keganasan (Limfoma Pel-Ebstein), atau Infeksi Tersembunyi (TB/Endokarditis)." }
+        ];
 
-        // Fungsi Helper: Custom Toast Notification 
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            
-            let bgClass = 'bg-slate-700';
-            let icon = '';
-            
-            if (type === 'success') {
-                bgClass = 'bg-emerald-500';
-                icon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
-            } else if (type === 'error') {
-                bgClass = 'bg-rose-500';
-                icon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-            } else if (type === 'warning') {
-                bgClass = 'bg-amber-500';
-                icon = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
-            }
+        // Document Initialization
+        document.addEventListener("DOMContentLoaded", function() {
+            initPctChart();
+            initSensitivityChart();
+            calculateParacetamol();
+            evaluateRochester();
+            filterDiagnoses();
+        });
 
-            toast.className = `toast-enter flex items-center gap-3 ${bgClass} text-white px-4 py-3 rounded-lg shadow-lg max-w-sm`;
-            toast.innerHTML = `${icon} <span class="text-sm font-medium">${message}</span>`;
-            
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.replace('toast-enter', 'toast-exit');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+        // Navigation Tab Switching Function
+        function switchTab(tabId) {
+            const sections = ['trajektori', 'patofisiologi', 'diagnostik', 'pediatri', 'kalkulator'];
+            sections.forEach(s => {
+                const secEl = document.getElementById('sec-' + s);
+                const navEl = document.getElementById('nav-' + s);
+                if (s === tabId) {
+                    secEl.classList.remove('hidden');
+                    navEl.classList.add('bg-slate-700', 'text-white');
+                    navEl.classList.remove('text-slate-300');
+                } else {
+                    secEl.classList.add('hidden');
+                    navEl.classList.remove('bg-slate-700', 'text-white');
+                    navEl.classList.add('text-slate-300');
+                }
+            });
         }
 
-        // Load data on start
-        function loadData() {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                patients = saved ? JSON.parse(saved) : [];
-            } catch (e) {
-                patients = [];
-                showToast("Data korup, memulai sesi baru.", "error");
-            }
-            updateDashboard();
+        // Duration Panel Switcher in Modul 1
+        function selectDuration(durKey) {
+            const keys = ['d12', 'd35', 'd614', 'd14plus'];
+            keys.forEach(k => {
+                const panel = document.getElementById('panel-' + k);
+                const btn = document.getElementById('btn-' + k);
+                if (k === durKey) {
+                    panel.classList.remove('hidden');
+                    btn.classList.add('border-blue-600', 'bg-blue-50/80');
+                    btn.classList.remove('border-slate-200', 'bg-white');
+                } else {
+                    panel.classList.add('hidden');
+                    btn.classList.remove('border-blue-600', 'bg-blue-50/80');
+                    btn.classList.add('border-slate-200', 'bg-white');
+                }
+            });
         }
 
-        // Save data to storage
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
-            updateDashboard();
+        // Chart 1: PCT vs CRP Kinetics Setup (Chart.js Canvas)
+        function initPctChart() {
+            const ctx = document.getElementById('pctCrpChart').getContext('2d');
+            pctChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['0 Jam', '6 Jam', '12 Jam', '24 Jam', '36 Jam', '48 Jam', '72 Jam'],
+                    datasets: [
+                        {
+                            label: 'Procalcitonin (PCT) [ng/mL]',
+                            data: [0.05, 0.8, 4.2, 8.5, 7.8, 4.1, 1.2],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'C-Reactive Protein (CRP) [mg/dL]',
+                            data: [0.2, 0.4, 1.2, 4.5, 8.0, 9.5, 7.2],
+                            borderColor: '#d97706',
+                            backgroundColor: 'rgba(217, 119, 6, 0.05)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Rasio Konsentrasi Serum Relative', font: { size: 11 } }
+                        }
+                    }
+                }
+            });
         }
 
-        function updateDashboard() {
-            const totalActual = patients.length;
-            
-            // Update Overall Progress
-            document.getElementById('totalAktual').textContent = totalActual;
-            
-            let overallPct = (totalActual / TARGET_TOTAL) * 100;
-            // Cap visual progress at 100% but text can show >100%
-            let visualPct = overallPct > 100 ? 100 : overallPct;
-            
-            document.getElementById('progressBar').style.width = `${visualPct}%`;
-            
-            const progressText = document.getElementById('progressText');
-            progressText.textContent = `${overallPct.toFixed(1)}% tercapai dari total target 300`;
-            if (totalActual >= TARGET_TOTAL) {
-                progressText.classList.add('text-emerald-600', 'font-semibold');
-                document.getElementById('progressBar').classList.replace('bg-indigo-600', 'bg-emerald-500');
+        function updatePctChart(mode) {
+            const btnBac = document.getElementById('btn-chart-bac');
+            const btnVir = document.getElementById('btn-chart-vir');
+
+            if (mode === 'bacterial') {
+                btnBac.className = "px-2.5 py-1 rounded bg-blue-600 text-white font-medium";
+                btnVir.className = "px-2.5 py-1 rounded bg-slate-200 text-slate-700 font-medium hover:bg-slate-300";
+                pctChartInstance.data.datasets[0].data = [0.05, 0.8, 4.2, 8.5, 7.8, 4.1, 1.2];
+                pctChartInstance.data.datasets[1].data = [0.2, 0.4, 1.2, 4.5, 8.0, 9.5, 7.2];
             } else {
-                progressText.classList.remove('text-emerald-600', 'font-semibold');
-                document.getElementById('progressBar').classList.replace('bg-emerald-500', 'bg-indigo-600');
+                btnVir.className = "px-2.5 py-1 rounded bg-blue-600 text-white font-medium";
+                btnBac.className = "px-2.5 py-1 rounded bg-slate-200 text-slate-700 font-medium hover:bg-slate-300";
+                // In viral infection, IFN-gamma suppresses PCT!
+                pctChartInstance.data.datasets[0].data = [0.05, 0.08, 0.12, 0.15, 0.14, 0.10, 0.06];
+                pctChartInstance.data.datasets[1].data = [0.2, 0.5, 1.1, 2.2, 2.8, 2.1, 1.2];
             }
-
-            // Function to calculate and render rows
-            function renderCategory(categoryKey, tableId) {
-                const tbody = document.getElementById(tableId);
-                tbody.innerHTML = '';
-                
-                const configs = targetConfig[categoryKey];
-                
-                for (const key in configs) {
-                    const item = configs[key];
-                    
-                    // Logic Inti: Menghitung Absolut Target dari persentase x 300
-                    const targetOrang = Math.round(TARGET_TOTAL * (item.pct / 100));
-                    
-                    // Filter Aktual
-                    const actualCount = patients.filter(p => p[categoryKey] === key).length;
-                    
-                    // Capaian = Aktual / Target Orang 
-                    let achievementPct = 0;
-                    if (targetOrang > 0) {
-                        achievementPct = (actualCount / targetOrang) * 100;
-                    } else if (targetOrang === 0 && actualCount > 0) {
-                        achievementPct = 100; // Exception if target 0 but data exist
-                    }
-
-                    // Warning colors if gap is too far behind relative to total progress
-                    let capClass = 'text-slate-600';
-                    if (achievementPct >= 100) capClass = 'text-emerald-600 font-bold';
-                    else if (achievementPct >= 50) capClass = 'text-indigo-600 font-semibold';
-                    else if (actualCount > 0) capClass = 'text-amber-500 font-semibold';
-                    
-                    const row = `
-                        <tr class="hover:bg-slate-100 transition-colors fade-in bg-white">
-                            <td class="px-5 py-3 font-medium text-slate-800">${item.label}</td>
-                            <td class="px-5 py-3 text-center bg-slate-50/50">${item.pct.toFixed(2)}%</td>
-                            <td class="px-5 py-3 text-center font-bold text-indigo-700 bg-indigo-50/30">${targetOrang}</td>
-                            <td class="px-5 py-3 text-center font-medium ${actualCount > 0 ? 'text-slate-800' : 'text-slate-400'}">${actualCount}</td>
-                            <td class="px-5 py-3 text-center ${capClass}">${achievementPct.toFixed(1)}%</td>
-                        </tr>
-                    `;
-                    tbody.insertAdjacentHTML('beforeend', row);
-                }
-            }
-
-            // Render all 3 tables
-            renderCategory('umur', 'tableUmur');
-            renderCategory('kelamin', 'tableKelamin');
-            renderCategory('kasus', 'tableKasus');
+            pctChartInstance.update();
         }
 
-        // 1. Submit Form Pasien Baru
-        document.getElementById('addPatientForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const umur = document.getElementById('inputUmur').value;
-            const kelamin = document.getElementById('inputKelamin').value;
-            const kasus = document.getElementById('inputKasus').value;
-
-            const id = 'pt_' + Date.now() + Math.floor(Math.random() * 1000);
-            
-            patients.push({ id, umur, kelamin, kasus, timestamp: new Date().toISOString() });
-            
-            this.reset();
-            saveData();
-            showToast('Satu pasien berhasil ditambahkan!');
-        });
-
-        // 2. Impor JSON
-        document.getElementById('importBtn').addEventListener('click', () => {
-            document.getElementById('importJsonInput').click();
-        });
-
-        document.getElementById('importJsonInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const data = JSON.parse(evt.target.result);
-                    if (Array.isArray(data)) {
-                        patients = data;
-                        saveData();
-                        showToast(`Berhasil mengimpor ${patients.length} data pasien!`);
-                    } else {
-                        showToast('Format JSON salah. Harus berupa Array.', 'error');
+        // Chart 2: Diagnostic Sensitivity Curves (Chart.js Canvas)
+        function initSensitivityChart() {
+            const ctx = document.getElementById('sensitivityChart').getContext('2d');
+            sensitivityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Hari 1', 'Hari 2', 'Hari 3', 'Hari 4', 'Hari 5', 'Hari 7', 'Hari 10', 'Hari 14'],
+                    datasets: [
+                        {
+                            label: 'Dengue NS1 Ag',
+                            data: [92, 95, 90, 75, 50, 15, 2, 0],
+                            borderColor: '#2563eb',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Dengue IgM',
+                            data: [5, 10, 25, 50, 75, 92, 98, 95],
+                            borderColor: '#059669',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Leptospira PCR Blood',
+                            data: [90, 92, 85, 70, 45, 15, 5, 0],
+                            borderColor: '#7c3aed',
+                            borderWidth: 2,
+                            borderDash: [3, 3],
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Leptospira MAT Serology',
+                            data: [0, 5, 10, 20, 40, 75, 90, 96],
+                            borderColor: '#db2777',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Kultur Darah S. typhi',
+                            data: [80, 85, 82, 75, 65, 50, 30, 15],
+                            borderColor: '#d97706',
+                            borderWidth: 2,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: { display: true, text: 'Sensitivitas Diagnostik (%)', font: { size: 11 } }
+                        }
                     }
-                } catch (err) {
-                    showToast('Gagal memproses file JSON.', 'error');
                 }
-            };
-            reader.readAsText(file);
-            this.value = ''; // Reset
-        });
+            });
+        }
 
-        // 3. Ekspor JSON
-        document.getElementById('exportJsonBtn').addEventListener('click', () => {
-            if (patients.length === 0) return showToast('Belum ada data untuk diekspor.', 'warning');
-            
-            const str = JSON.stringify(patients, null, 2);
-            const blob = new Blob([str], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `Data_Pasien_${new Date().toISOString().slice(0,10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            showToast('Berhasil mengekspor JSON!');
-        });
+        // Rochester Criteria Live Evaluator
+        function evaluateRochester() {
+            const c1 = document.getElementById('roch-1').checked;
+            const c2 = document.getElementById('roch-2').checked;
+            const c3 = document.getElementById('roch-3').checked;
+            const c4 = document.getElementById('roch-4').checked;
+            const c5 = document.getElementById('roch-5').checked;
+            const c6 = document.getElementById('roch-6').checked;
 
-        // 4. Ekspor CSV (Sekarang Mengikuti Hitungan Target 300)
-        document.getElementById('exportCsvBtn').addEventListener('click', function() {
-            if (patients.length === 0) return showToast('Belum ada data untuk diekspor.', 'warning');
+            const resDiv = document.getElementById('rochester-result');
 
-            let csv = "Kategori Utama,Sub-Kategori,Persentase Req (%),Target Absolut (300 Org),Aktual (Org),Capaian (%)\n";
+            if (c1 && c2 && c3 && c4 && c5 && c6) {
+                resDiv.className = "p-3 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg text-xs font-bold";
+                resDiv.innerHTML = "✅ TERCAPAI: Kategori Risiko Rendah SBI (Rochester Low-Risk). Bayi dapat dipertimbangkan untuk observasi rawat jalan dengan pemantauan ketat 24 jam.";
+            } else {
+                resDiv.className = "p-3 bg-amber-100 border border-amber-300 text-amber-900 rounded-lg text-xs font-bold";
+                resDiv.innerHTML = "⚠️ TIDAK MEMENUHI KRITERIA RISIKO RENDAH. Memerlukan evaluasi kultur lanjutan, pertimbangan rawat inap, atau terapi antibiotik empiris (Ceftriaxone).";
+            }
+        }
 
-            function appendToCSV(categoryName, categoryKey) {
-                const configs = targetConfig[categoryKey];
-                for (const key in configs) {
-                    const item = configs[key];
-                    const targetOrang = Math.round(TARGET_TOTAL * (item.pct / 100));
-                    const actualCount = patients.filter(p => p[categoryKey] === key).length;
-                    
-                    let achievementPct = 0;
-                    if (targetOrang > 0) achievementPct = (actualCount / targetOrang) * 100;
-                    else if (targetOrang === 0 && actualCount > 0) achievementPct = 100;
+        // Paracetamol Dosage & Volume Calculator
+        function calculateParacetamol() {
+            const weight = parseFloat(document.getElementById('calc-weight').value) || 0;
+            const syrupConc = parseInt(document.getElementById('calc-syrup').value);
 
-                    csv += `"${categoryName}","${item.label}","${item.pct}","${targetOrang}","${actualCount}","${achievementPct.toFixed(2)}"\n`;
-                }
+            if (weight <= 0) return;
+
+            // 10 to 15 mg/kgBB per dose
+            const minMg = Math.round(weight * 10);
+            const maxMg = Math.round(weight * 15);
+
+            // Max daily dose: 75 mg/kg or 4000 mg
+            let maxDailyMg = Math.round(weight * 75);
+            if (maxDailyMg > 4000) maxDailyMg = 4000;
+
+            let minMl = 0, maxMl = 0;
+            if (syrupConc === 120) {
+                minMl = (minMg / 120) * 5;
+                maxMl = (maxMg / 120) * 5;
+            } else if (syrupConc === 250) {
+                minMl = (minMg / 250) * 5;
+                maxMl = (maxMg / 250) * 5;
+            } else if (syrupConc === 80) { // Drops 80 mg / 0.8 mL -> 100 mg/mL
+                minMl = minMg / 100;
+                maxMl = maxMg / 100;
             }
 
-            appendToCSV('Umur', 'umur');
-            appendToCSV('Jenis Kelamin', 'kelamin');
-            appendToCSV('Kasus', 'kasus');
-            
-            const total = patients.length;
-            const totalPct = (total / TARGET_TOTAL) * 100;
-            csv += `\n"TOTAL KESELURUHAN","","100","${TARGET_TOTAL}","${total}","${totalPct.toFixed(2)}"\n`;
+            document.getElementById('res-dose-mg').innerText = minMg + " - " + maxMg + " mg";
+            document.getElementById('res-dose-ml').innerText = minMl.toFixed(1) + " - " + maxMl.toFixed(1) + " mL";
+            document.getElementById('res-max-mg').innerText = "Max " + maxDailyMg + " mg/hari";
+        }
 
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `Laporan_Target_Pasien_${new Date().toISOString().slice(0,10)}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            showToast('Laporan CSV berhasil diunduh!');
-        });
+        // Interactive Differential Search & Filter
+        function filterDiagnoses() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const durFilter = document.getElementById('filter-dur-select').value;
+            const grid = document.getElementById('diag-cards-grid');
 
-        // 5. Reset Data (Simulasi Custom Confirm Tanpa Fungsi alert/confirm native)
-        document.getElementById('resetBtn').addEventListener('click', function() {
-            // Karena tidak diperbolehkan memakai confirm(), aksi ini diset langsung mengeksekusi penghapusan
-            // Akan tetapi, notifikasinya sangat jelas menggunakan toast UI
-            if(patients.length === 0) {
-                return showToast('Data sudah kosong.', 'warning');
+            grid.innerHTML = "";
+
+            const filtered = diagnosesData.filter(item => {
+                const matchDur = (durFilter === 'all' || item.duration === durFilter);
+                const matchQuery = item.name.toLowerCase().includes(query) || 
+                                   item.symptoms.toLowerCase().includes(query) || 
+                                   item.summary.toLowerCase().includes(query);
+                return matchDur && matchQuery;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-2 p-4 text-center text-slate-500 text-xs">Tidak ditemukan diagnosis yang sesuai dengan kriteria pencarian.</div>';
+                return;
             }
-            patients = [];
-            saveData();
-            showToast('Peringatan: Seluruh data telah dihapus secara permanen!', 'error');
-        });
 
-        // Init Setup
-        window.addEventListener('DOMContentLoaded', loadData);
-
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs";
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-slate-900 text-sm">${item.name}</span>
+                        <span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-bold">${item.durLabel}</span>
+                    </div>
+                    <p class="text-slate-600">${item.summary}</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
     </script>
 </body>
 </html>
